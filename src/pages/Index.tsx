@@ -1,10 +1,36 @@
-
 import React from "react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import Navbar from "@/components/layout/Navbar";
 import OverdueMail from "@/components/dashboard/OverdueMail";
 import { IncomingMail, OutgoingMail } from "@/types/mail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, Send, Clock, CheckCircle } from "lucide-react";
+import { Mail, Send, Clock, CheckCircle, Filter, ArrowUpDown } from "lucide-react";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "@/components/ui/sonner";
+import { Link } from "react-router-dom";
+
+// Données pour les statistiques par type de courrier
+const mailTypeData = [
+  { name: "Administratif", value: 25, color: "#4f46e5" },
+  { name: "Technique", value: 15, color: "#10b981" },
+  { name: "Commercial", value: 12, color: "#f59e0b" },
+  { name: "Financier", value: 8, color: "#6366f1" },
+  { name: "Autre", value: 5, color: "#8b5cf6" },
+];
+
+// Données pour les statistiques mensuelles
+const monthlyData = [
+  { name: "Jan", incoming: 12, outgoing: 10 },
+  { name: "Fév", incoming: 15, outgoing: 12 },
+  { name: "Mar", incoming: 18, outgoing: 15 },
+  { name: "Avr", incoming: 14, outgoing: 18 },
+  { name: "Mai", incoming: 20, outgoing: 17 },
+  { name: "Juin", incoming: 22, outgoing: 20 },
+];
 
 // Mock data for demonstration
 const mockOverdueMails: IncomingMail[] = [
@@ -37,33 +63,83 @@ const mockOverdueMails: IncomingMail[] = [
   },
 ];
 
+// Fonction pour récupérer les statistiques depuis Supabase
+const fetchMailStats = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("mail_statistics")
+      .select("*")
+      .order("year", { ascending: false })
+      .order("month", { ascending: false })
+      .limit(6);
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des statistiques:", error);
+    return null;
+  }
+};
+
+// Fonction pour récupérer les courriers en retard
+const fetchOverdueMails = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("overdue_mail_view")
+      .select("*")
+      .order("date", { ascending: false });
+      
+    if (error) throw error;
+    return data as IncomingMail[];
+  } catch (error) {
+    console.error("Erreur lors de la récupération des courriers en retard:", error);
+    return [];
+  }
+};
+
 const Index: React.FC = () => {
-  // In a real application, these stats would come from the database
+  const { data: mailStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["mailStats"],
+    queryFn: fetchMailStats,
+    onError: (error) => {
+      toast.error("Erreur lors du chargement des statistiques");
+      console.error(error);
+    }
+  });
+  
+  const { data: overdueMails, isLoading: overdueLoading } = useQuery({
+    queryKey: ["overdueMails"],
+    queryFn: fetchOverdueMails,
+    onError: (error) => {
+      toast.error("Erreur lors du chargement des courriers en retard");
+      console.error(error);
+    }
+  });
+  
+  // Stats calculées (utiliser les vraies données ou les mock si non disponibles)
   const stats = {
-    totalIncoming: 45,
-    totalOutgoing: 38,
-    pending: 12,
-    processed: 71,
+    totalIncoming: mailStats?.reduce((sum, stat) => sum + stat.incoming_count, 0) || 45,
+    totalOutgoing: mailStats?.reduce((sum, stat) => sum + stat.outgoing_count, 0) || 38,
+    pending: 12, // À calculer en fonction des statuts réels
+    processed: 71, // À calculer en fonction des statuts réels
   };
+  
+  const formattedDate = format(new Date(), "EEEE d MMMM yyyy", { locale: fr });
+  const formattedDateCapitalized = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
   
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
       
-      <div className="page-container flex-1">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="page-title">Tableau de Bord</h1>
+      <div className="container mx-auto px-4 py-6 flex-1">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 md:mb-0">Tableau de Bord</h1>
           <p className="text-gray-500">
-            {new Date().toLocaleDateString("fr-FR", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            {formattedDateCapitalized}
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           <Card>
             <CardContent className="p-6 flex flex-col items-center">
               <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
@@ -105,7 +181,79 @@ const Index: React.FC = () => {
           </Card>
         </div>
         
-        <OverdueMail overdueEmails={mockOverdueMails} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-agency-blue flex items-center justify-between">
+                <span>Tendance Mensuelle</span>
+                <Filter className="h-5 w-5 text-gray-400" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="px-2">
+              <ChartContainer className="h-80" config={{}}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip
+                      content={(props) => (
+                        <ChartTooltipContent
+                          className="bg-white p-2 rounded-md shadow-md border"
+                          {...props}
+                        />
+                      )}
+                    />
+                    <Legend />
+                    <Bar dataKey="incoming" name="Entrants" fill="#4f46e5" />
+                    <Bar dataKey="outgoing" name="Départs" fill="#10b981" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-agency-blue flex items-center justify-between">
+                <span>Répartition par Type</span>
+                <ArrowUpDown className="h-5 w-5 text-gray-400" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer className="h-80" config={{}}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={mailTypeData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {mailTypeData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      content={(props) => (
+                        <ChartTooltipContent
+                          className="bg-white p-2 rounded-md shadow-md border"
+                          {...props}
+                        />
+                      )}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <OverdueMail overdueEmails={overdueMails || mockOverdueMails} />
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
@@ -144,28 +292,28 @@ const Index: React.FC = () => {
               <CardTitle className="text-agency-blue">Actions Rapides</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <a 
-                  href="/incoming" 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Link 
+                  to="/incoming" 
                   className="flex flex-col items-center p-4 border rounded-lg hover:bg-blue-50 transition-colors"
                 >
                   <Mail className="h-10 w-10 text-agency-blue mb-2" />
                   <span className="text-center">Enregistrer un Courrier Entrant</span>
-                </a>
-                <a 
-                  href="/outgoing" 
+                </Link>
+                <Link 
+                  to="/outgoing" 
                   className="flex flex-col items-center p-4 border rounded-lg hover:bg-green-50 transition-colors"
                 >
                   <Send className="h-10 w-10 text-green-600 mb-2" />
                   <span className="text-center">Enregistrer un Courrier Départ</span>
-                </a>
-                <a 
-                  href="/statistics" 
-                  className="flex flex-col items-center p-4 border rounded-lg hover:bg-purple-50 transition-colors col-span-2"
+                </Link>
+                <Link 
+                  to="/statistics" 
+                  className="flex flex-col items-center p-4 border rounded-lg hover:bg-purple-50 transition-colors col-span-1 sm:col-span-2"
                 >
-                  <Mail className="h-10 w-10 text-purple-600 mb-2" />
+                  <BarChart className="h-10 w-10 text-purple-600 mb-2" />
                   <span className="text-center">Voir les Statistiques</span>
-                </a>
+                </Link>
               </div>
             </CardContent>
           </Card>
