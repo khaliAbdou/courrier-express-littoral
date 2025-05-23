@@ -16,8 +16,15 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
-              <span className="font-bold text-xl">Courrier-Express</span>
-              <span className="ml-1 text-xs">Antenne du Littoral</span>
+              <img 
+                src="/lovable-uploads/b5287aa5-72f8-436b-95be-6d1a0e22b700.png" 
+                alt="ANOR Logo" 
+                className="h-10 w-10 mr-2"
+              />
+              <div className="flex flex-col">
+                <span className="font-bold text-xl">Suivi du Courrier</span>
+                <span className="ml-1 text-xs">Antenne du Littoral</span>
+              </div>
             </Link>
           </div>
           

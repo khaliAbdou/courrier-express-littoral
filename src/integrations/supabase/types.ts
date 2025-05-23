@@ -9,16 +9,343 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      comments: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: number
+          post_id: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: never
+          post_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: never
+          post_id?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incoming_mail: {
+        Row: {
+          chrono_number: string
+          created_at: string
+          date: string
+          document_link: string | null
+          id: string
+          mail_type: Database["public"]["Enums"]["mail_type"]
+          medium: Database["public"]["Enums"]["mail_medium"]
+          observations: string | null
+          recipient_service: string
+          response_date: string | null
+          sender_address: string | null
+          sender_name: string
+          status: Database["public"]["Enums"]["mail_status"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          chrono_number: string
+          created_at?: string
+          date?: string
+          document_link?: string | null
+          id?: string
+          mail_type: Database["public"]["Enums"]["mail_type"]
+          medium: Database["public"]["Enums"]["mail_medium"]
+          observations?: string | null
+          recipient_service: string
+          response_date?: string | null
+          sender_address?: string | null
+          sender_name: string
+          status?: Database["public"]["Enums"]["mail_status"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          chrono_number?: string
+          created_at?: string
+          date?: string
+          document_link?: string | null
+          id?: string
+          mail_type?: Database["public"]["Enums"]["mail_type"]
+          medium?: Database["public"]["Enums"]["mail_medium"]
+          observations?: string | null
+          recipient_service?: string
+          response_date?: string | null
+          sender_address?: string | null
+          sender_name?: string
+          status?: Database["public"]["Enums"]["mail_status"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      likes: {
+        Row: {
+          created_at: string | null
+          id: number
+          post_id: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: never
+          post_id?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: never
+          post_id?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mail_statistics: {
+        Row: {
+          administrative_count: number
+          commercial_count: number
+          created_at: string
+          financial_count: number
+          id: string
+          incoming_count: number
+          month: string
+          other_count: number
+          outgoing_count: number
+          technical_count: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          administrative_count?: number
+          commercial_count?: number
+          created_at?: string
+          financial_count?: number
+          id?: string
+          incoming_count?: number
+          month: string
+          other_count?: number
+          outgoing_count?: number
+          technical_count?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          administrative_count?: number
+          commercial_count?: number
+          created_at?: string
+          financial_count?: number
+          id?: string
+          incoming_count?: number
+          month?: string
+          other_count?: number
+          outgoing_count?: number
+          technical_count?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      outgoing_mail: {
+        Row: {
+          address: string | null
+          chrono_number: string
+          correspondent: string
+          created_at: string
+          date: string
+          document_link: string | null
+          id: string
+          medium: Database["public"]["Enums"]["mail_medium"]
+          observations: string | null
+          service: string
+          status: Database["public"]["Enums"]["mail_status"]
+          subject: string
+          updated_at: string
+          writer: string
+        }
+        Insert: {
+          address?: string | null
+          chrono_number: string
+          correspondent: string
+          created_at?: string
+          date?: string
+          document_link?: string | null
+          id?: string
+          medium: Database["public"]["Enums"]["mail_medium"]
+          observations?: string | null
+          service: string
+          status?: Database["public"]["Enums"]["mail_status"]
+          subject: string
+          updated_at?: string
+          writer: string
+        }
+        Update: {
+          address?: string | null
+          chrono_number?: string
+          correspondent?: string
+          created_at?: string
+          date?: string
+          document_link?: string | null
+          id?: string
+          medium?: Database["public"]["Enums"]["mail_medium"]
+          observations?: string | null
+          service?: string
+          status?: Database["public"]["Enums"]["mail_status"]
+          subject?: string
+          updated_at?: string
+          writer?: string
+        }
+        Relationships: []
+      }
+      posts: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: number
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: never
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: never
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          id: number
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          id?: never
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          id?: never
+          updated_at?: string | null
+          user_id?: string | null
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      overdue_mail_view: {
+        Row: {
+          chrono_number: string | null
+          created_at: string | null
+          date: string | null
+          document_link: string | null
+          id: string | null
+          mail_type: Database["public"]["Enums"]["mail_type"] | null
+          medium: Database["public"]["Enums"]["mail_medium"] | null
+          observations: string | null
+          recipient_service: string | null
+          response_date: string | null
+          sender_address: string | null
+          sender_name: string | null
+          status: Database["public"]["Enums"]["mail_status"] | null
+          subject: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          chrono_number?: string | null
+          created_at?: string | null
+          date?: string | null
+          document_link?: string | null
+          id?: string | null
+          mail_type?: Database["public"]["Enums"]["mail_type"] | null
+          medium?: Database["public"]["Enums"]["mail_medium"] | null
+          observations?: string | null
+          recipient_service?: string | null
+          response_date?: string | null
+          sender_address?: string | null
+          sender_name?: string | null
+          status?: Database["public"]["Enums"]["mail_status"] | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          chrono_number?: string | null
+          created_at?: string | null
+          date?: string | null
+          document_link?: string | null
+          id?: string | null
+          mail_type?: Database["public"]["Enums"]["mail_type"] | null
+          medium?: Database["public"]["Enums"]["mail_medium"] | null
+          observations?: string | null
+          recipient_service?: string | null
+          response_date?: string | null
+          sender_address?: string | null
+          sender_name?: string | null
+          status?: Database["public"]["Enums"]["mail_status"] | null
+          subject?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      mail_medium: "Email" | "Physical" | "Fax" | "Other"
+      mail_status: "Pending" | "Processing" | "Completed" | "Overdue"
+      mail_type:
+        | "Administrative"
+        | "Technical"
+        | "Commercial"
+        | "Financial"
+        | "Other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +460,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      mail_medium: ["Email", "Physical", "Fax", "Other"],
+      mail_status: ["Pending", "Processing", "Completed", "Overdue"],
+      mail_type: [
+        "Administrative",
+        "Technical",
+        "Commercial",
+        "Financial",
+        "Other",
+      ],
+    },
   },
 } as const

@@ -174,7 +174,7 @@ const Index: React.FC = () => {
       
       <footer className="bg-white border-t py-6 mt-8">
         <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>© 2023 Antenne du Littoral de l'Agence des Normes et de la Qualité. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} ANOR - Antenne du Littoral de l'Agence des Normes et de la Qualité. Tous droits réservés.</p>
         </div>
       </footer>
     </div>
