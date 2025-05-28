@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 
+function getAllIncomingMails() {
+  const key = "incomingMails";
+  const existing = localStorage.getItem(key);
+  return existing ? JSON.parse(existing) : [];
+}
+
 // Mock data for demonstration
 const mockIncomingMails: IncomingMail[] = [
   {
