@@ -1,4 +1,12 @@
 
+function saveIncomingMailToLocalStorage(mail: any) {
+  const key = "incomingMails";
+  const existing = localStorage.getItem(key);
+  const mails = existing ? JSON.parse(existing) : [];
+  mails.push(mail);
+  localStorage.setItem(key, JSON.stringify(mails));
+}
+
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { MailMedium, MailType } from "@/types/mail";
