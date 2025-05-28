@@ -67,12 +67,13 @@ const IncomingMailForm: React.FC = () => {
     
     // Here we would normally save the data to the database
     console.log("Form submitted with data:", formData);
+
+   // Enregistre dans le localStorage
+saveIncomingMailToLocalStorage(formData);
     
     toast.success("Courrier entrant enregistré avec succès!");
 
-    // Enregistre dans le localStorage
-saveIncomingMailToLocalStorage(formData);
-    // Reset form
+     // Reset form
     setFormData({
       chronoNumber: "",
       date: new Date(),
