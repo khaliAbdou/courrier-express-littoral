@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { MailMedium } from "@/types/mail";
@@ -26,7 +25,13 @@ function saveOutgoingMailToLocalStorage(mail: any) {
   mails.push(mail);
   localStorage.setItem(key, JSON.stringify(mails));
 }
-const OutgoingMailForm: React.FC = () => {
+
+// Ajoute la prop onMailSaved
+interface OutgoingMailFormProps {
+  onMailSaved?: () => void;
+}
+
+const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
   const [formData, setFormData] = useState({
     chronoNumber: "",
     date: new Date(),
@@ -39,37 +44,39 @@ const OutgoingMailForm: React.FC = () => {
     observations: "",
     documentLink: "",
   });
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
+
   const handleSelectChange = (name: string, value: string) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
+
   const handleDateChange = (name: string, date: Date | undefined) => {
     if (date) {
       setFormData((prev) => ({ ...prev, [name]: date }));
     }
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!formData.chronoNumber || !formData.subject || !formData.medium || 
         !formData.correspondent || !formData.service || !formData.writer) {
       toast.error("Veuillez remplir tous les champs obligatoires.");
       return;
     }
-    
-    // Here we would normally save the data to the database
-    console.log("Form submitted with data:", formData);
+
     saveOutgoingMailToLocalStorage(formData);
+
+    // Rafraîchir la liste si le parent fournit la prop
+    if (onMailSaved) onMailSaved();
+
     toast.success("Courrier départ enregistré avec succès!");
-    
+
     // Reset form
     setFormData({
       chronoNumber: "",
@@ -84,7 +91,7 @@ const OutgoingMailForm: React.FC = () => {
       documentLink: "",
     });
   };
-  
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -106,7 +113,7 @@ const OutgoingMailForm: React.FC = () => {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label className="form-label">Date *</label>
               <Popover>
@@ -134,13 +141,13 @@ const OutgoingMailForm: React.FC = () => {
               </Popover>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label htmlFor="medium" className="form-label">
                 Support *
               </label>
-              <Select 
+              <Select
                 onValueChange={(value) => handleSelectChange("medium", value)}
                 value={formData.medium}
               >
@@ -155,7 +162,7 @@ const OutgoingMailForm: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="subject" className="form-label">
                 Objet *
@@ -170,7 +177,7 @@ const OutgoingMailForm: React.FC = () => {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label htmlFor="correspondent" className="form-label">
@@ -185,7 +192,7 @@ const OutgoingMailForm: React.FC = () => {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="address" className="form-label">
                 Adresse
@@ -199,7 +206,7 @@ const OutgoingMailForm: React.FC = () => {
               />
             </div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label htmlFor="service" className="form-label">
@@ -214,7 +221,7 @@ const OutgoingMailForm: React.FC = () => {
                 required
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="writer" className="form-label">
                 Rédacteur *
@@ -229,7 +236,7 @@ const OutgoingMailForm: React.FC = () => {
               />
             </div>
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="observations" className="form-label">
               Observations
@@ -243,7 +250,7 @@ const OutgoingMailForm: React.FC = () => {
               className="h-20"
             />
           </div>
-          
+
           <div className="form-group">
             <label htmlFor="documentLink" className="form-label">
               Fichier Numérisé
@@ -257,14 +264,13 @@ const OutgoingMailForm: React.FC = () => {
                 // Handle file upload
                 const files = (e.target as HTMLInputElement).files;
                 if (files && files.length > 0) {
-                  // Here we would usually upload the file and get a URL back
-                  // For now we'll just store the file name
+                  // Ici on stocke juste le nom du fichier
                   setFormData((prev) => ({ ...prev, documentLink: files[0].name }));
                 }
               }}
             />
           </div>
-          
+
           <CardFooter className="flex justify-end space-x-2 px-0 pb-0">
             <Button variant="outline" type="button" onClick={() => setFormData({
               chronoNumber: "",
