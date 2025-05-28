@@ -8,31 +8,33 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 
-// Fonction utilitaire pour récupérer les courriers entrants du localStorage
+// Fonction utilitaire pour récupérer les courriers entrants du localStorage en toute sécurité
 function getAllIncomingMails(): IncomingMail[] {
   const key = "incomingMails";
   const existing = localStorage.getItem(key);
   if (!existing) return [];
-  // On parse les dates pour les remettre en objets Date si besoin
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-    responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-  }));
+  try {
+    return JSON.parse(existing).map((mail: any) => ({
+      ...mail,
+      date: mail.date ? new Date(mail.date) : undefined,
+      responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
+    }));
+  } catch {
+    return [];
+  }
 }
 
 const IncomingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMails, setFilteredMails] = useState<IncomingMail[]>([]);
-  const [refresh, setRefresh] = useState<number>(0); // Permet de forcer le refresh à l'ajout d'un courrier
+  const [refresh, setRefresh] = useState<number>(0);
 
-  // À chaque ouverture ou ajout, on recharge les données locales
   useEffect(() => {
     const mails = getAllIncomingMails();
     setFilteredMails(mails);
   }, [refresh]);
 
-  // Permet au formulaire d’indiquer qu’il y a eu ajout
+  // Rafraîchit la liste après ajout
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
   };
@@ -41,10 +43,10 @@ const IncomingMailPage: React.FC = () => {
     e.preventDefault();
     const allMails = getAllIncomingMails();
     const filtered = allMails.filter((mail) =>
-      mail.chronoNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.senderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.recipientService.toLowerCase().includes(searchTerm.toLowerCase())
+      (mail.chronoNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (mail.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (mail.senderName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (mail.recipientService || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredMails(filtered);
   };
@@ -57,16 +59,13 @@ const IncomingMailPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
-
       <div className="page-container flex-1">
         <h1 className="page-title">Gestion des Courriers Entrants</h1>
-
         <Tabs defaultValue="list" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="list">Liste des Courriers</TabsTrigger>
             <TabsTrigger value="register">Enregistrer un Courrier</TabsTrigger>
           </TabsList>
-
           <TabsContent value="list" className="mt-0">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden">
               <div className="p-4 border-b">
@@ -89,17 +88,16 @@ const IncomingMailPage: React.FC = () => {
                   )}
                 </form>
               </div>
-
               <MailTable mails={filteredMails} type="incoming" />
             </div>
           </TabsContent>
-
           <TabsContent value="register" className="mt-0">
+            {/* Texte de test pour vérifier l'affichage du formulaire */}
+            {/* <div style={{ padding: 16, color: 'blue' }}>TEST FORMULAIRE</div> */}
             <IncomingMailForm onMailSaved={handleNewMail} />
           </TabsContent>
         </Tabs>
       </div>
-
       <footer className="bg-white border-t py-6 mt-8">
         <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
           <p>
