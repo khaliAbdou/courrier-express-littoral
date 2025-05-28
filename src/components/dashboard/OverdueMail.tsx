@@ -1,15 +1,26 @@
-
-import React from "react";
+import React, { useMemo } from "react";
 import { IncomingMail } from "@/types/mail";
-import { format, differenceInDays } from "date-fns";
 import { AlertCircle } from "lucide-react";
 import MailTable from "../mail/MailTable";
 
-interface OverdueMailProps {
-  overdueEmails: IncomingMail[];
+// Fonction utilitaire pour lire les courriers entrants du localStorage
+function getAllIncomingMails(): IncomingMail[] {
+  const key = "incomingMails";
+  const existing = localStorage.getItem(key);
+  if (!existing) return [];
+  return JSON.parse(existing).map((mail: any) => ({
+    ...mail,
+    date: mail.date ? new Date(mail.date) : undefined,
+    responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
+  }));
 }
 
-const OverdueMail: React.FC<OverdueMailProps> = ({ overdueEmails }) => {
+const OverdueMail: React.FC = () => {
+  // On utilise useMemo pour éviter une lecture à chaque render
+  const overdueEmails = useMemo(() => {
+    return getAllIncomingMails().filter((mail) => mail.status === "Overdue");
+  }, []);
+
   return (
     <div className="mb-8">
       <div className="flex items-center mb-4">
@@ -26,7 +37,6 @@ const OverdueMail: React.FC<OverdueMailProps> = ({ overdueEmails }) => {
               Ces courriers nécessitent une attention immédiate. Veuillez les traiter dès que possible.
             </p>
           </div>
-          
           <MailTable mails={overdueEmails} type="incoming" />
         </div>
       ) : (
