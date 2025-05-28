@@ -29,7 +29,7 @@ const OutgoingMailPage: React.FC = () => {
     setFilteredMails(mails);
   }, [refresh]);
 
-  // À passer en prop à OutgoingMailForm si tu veux rafraîchir après ajout
+  // Rafraîchit la liste après ajout
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
   };
@@ -38,10 +38,10 @@ const OutgoingMailPage: React.FC = () => {
     e.preventDefault();
     const allMails = getAllOutgoingMails();
     const filtered = allMails.filter((mail) =>
-      mail.chronoNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.correspondent.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.service.toLowerCase().includes(searchTerm.toLowerCase())
+      mail.chronoNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mail.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mail.correspondent?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      mail.service?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredMails(filtered);
   };
