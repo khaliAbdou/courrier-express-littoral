@@ -32,7 +32,7 @@ const IncomingMailPage: React.FC = () => {
     setFilteredMails(mails);
   }, [refresh]);
 
-  // Permet au formulaire d’indiquer qu’il y a eu ajout (si besoin tu peux passer setRefresh à IncomingMailForm via props)
+  // Permet au formulaire d’indiquer qu’il y a eu ajout
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
   };
