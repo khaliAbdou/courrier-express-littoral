@@ -1,3 +1,4 @@
+
 import React from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -6,7 +7,7 @@ import OverdueMail from "@/components/dashboard/OverdueMail";
 import { IncomingMail, OutgoingMail } from "@/types/mail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mail, Send, Clock, CheckCircle, Filter, ArrowUpDown } from "lucide-react";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -82,7 +83,7 @@ const fetchMailStats = async () => {
 };
 
 // Fonction pour récupérer les courriers en retard
-const fetchOverdueMails = async () => {
+const fetchOverdueMails = async (): Promise<IncomingMail[]> => {
   try {
     const { data, error } = await supabase
       .from("overdue_mail_view")
@@ -90,7 +91,23 @@ const fetchOverdueMails = async () => {
       .order("date", { ascending: false });
       
     if (error) throw error;
-    return data as IncomingMail[];
+    
+    // Transformation des données Supabase (snake_case) vers le format TypeScript (camelCase)
+    return (data || []).map(item => ({
+      id: item.id,
+      chronoNumber: item.chrono_number,
+      date: new Date(item.date),
+      medium: item.medium,
+      subject: item.subject,
+      mailType: item.mail_type,
+      responseDate: item.response_date ? new Date(item.response_date) : undefined,
+      senderName: item.sender_name,
+      senderAddress: item.sender_address,
+      recipientService: item.recipient_service,
+      observations: item.observations,
+      documentLink: item.document_link,
+      status: item.status,
+    }));
   } catch (error) {
     console.error("Erreur lors de la récupération des courriers en retard:", error);
     return [];
@@ -101,20 +118,19 @@ const Index: React.FC = () => {
   const { data: mailStats, isLoading: statsLoading } = useQuery({
     queryKey: ["mailStats"],
     queryFn: fetchMailStats,
-    onError: (error) => {
-      toast.error("Erreur lors du chargement des statistiques");
-      console.error(error);
-    }
   });
   
   const { data: overdueMails, isLoading: overdueLoading } = useQuery({
     queryKey: ["overdueMails"],
     queryFn: fetchOverdueMails,
-    onError: (error) => {
-      toast.error("Erreur lors du chargement des courriers en retard");
-      console.error(error);
-    }
   });
+  
+  // Gestion des erreurs via React Error Boundary ou useEffect si nécessaire
+  React.useEffect(() => {
+    if (mailStats === null) {
+      toast.error("Erreur lors du chargement des statistiques");
+    }
+  }, [mailStats]);
   
   // Stats calculées (utiliser les vraies données ou les mock si non disponibles)
   const stats = {
@@ -195,14 +211,7 @@ const Index: React.FC = () => {
                   <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                     <XAxis dataKey="name" />
                     <YAxis />
-                    <Tooltip
-                      content={(props) => (
-                        <ChartTooltipContent
-                          className="bg-white p-2 rounded-md shadow-md border"
-                          {...props}
-                        />
-                      )}
-                    />
+                    <Tooltip />
                     <Legend />
                     <Bar dataKey="incoming" name="Entrants" fill="#4f46e5" />
                     <Bar dataKey="outgoing" name="Départs" fill="#10b981" />
@@ -237,14 +246,7 @@ const Index: React.FC = () => {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip 
-                      content={(props) => (
-                        <ChartTooltipContent
-                          className="bg-white p-2 rounded-md shadow-md border"
-                          {...props}
-                        />
-                      )}
-                    />
+                    <Tooltip />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
