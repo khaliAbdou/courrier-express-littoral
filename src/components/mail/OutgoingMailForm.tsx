@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { MailMedium } from "@/types/mail";
@@ -42,7 +43,6 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     service: "",
     writer: "",
     observations: "",
-    documentLink: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -88,7 +88,6 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
       service: "",
       writer: "",
       observations: "",
-      documentLink: "",
     });
   };
 
@@ -98,11 +97,12 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
         <CardTitle>Enregistrer un Courrier Départ</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Première ligne : Numéro Chrono et Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label htmlFor="chronoNumber" className="form-label">
-                Numéro de Chrono *
+                Numéro de Chrono <span className="text-red-500">*</span>
               </label>
               <Input
                 id="chronoNumber"
@@ -115,7 +115,9 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Date *</label>
+              <label className="form-label">
+                Date <span className="text-red-500">*</span>
+              </label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -142,10 +144,11 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             </div>
           </div>
 
+          {/* Deuxième ligne : Support et Objet */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label htmlFor="medium" className="form-label">
-                Support *
+                Support <span className="text-red-500">*</span>
               </label>
               <Select
                 onValueChange={(value) => handleSelectChange("medium", value)}
@@ -165,7 +168,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
 
             <div className="form-group">
               <label htmlFor="subject" className="form-label">
-                Objet *
+                Objet <span className="text-red-500">*</span>
               </label>
               <Input
                 id="subject"
@@ -178,10 +181,11 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             </div>
           </div>
 
+          {/* Troisième ligne : Correspondant et Service */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label htmlFor="correspondent" className="form-label">
-                Correspondant *
+                Correspondant <span className="text-red-500">*</span>
               </label>
               <Input
                 id="correspondent"
@@ -194,6 +198,23 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="service" className="form-label">
+                Service <span className="text-red-500">*</span>
+              </label>
+              <Input
+                id="service"
+                name="service"
+                value={formData.service}
+                onChange={handleInputChange}
+                placeholder="Entrez le service"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Quatrième ligne : Adresse et Rédacteur */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-group">
               <label htmlFor="address" className="form-label">
                 Adresse
               </label>
@@ -205,26 +226,10 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
                 placeholder="Entrez l'adresse"
               />
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="form-group">
-              <label htmlFor="service" className="form-label">
-                Service *
-              </label>
-              <Input
-                id="service"
-                name="service"
-                value={formData.service}
-                onChange={handleInputChange}
-                placeholder="Entrez le service"
-                required
-              />
-            </div>
 
             <div className="form-group">
               <label htmlFor="writer" className="form-label">
-                Rédacteur *
+                Rédacteur <span className="text-red-500">*</span>
               </label>
               <Input
                 id="writer"
@@ -237,6 +242,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             </div>
           </div>
 
+          {/* Observations */}
           <div className="form-group">
             <label htmlFor="observations" className="form-label">
               Observations
@@ -247,27 +253,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
               value={formData.observations}
               onChange={handleInputChange}
               placeholder="Entrez des observations éventuelles"
-              className="h-20"
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="documentLink" className="form-label">
-              Fichier Numérisé
-            </label>
-            <Input
-              id="documentLink"
-              name="documentLink"
-              type="file"
-              className="cursor-pointer"
-              onChange={(e) => {
-                // Handle file upload
-                const files = (e.target as HTMLInputElement).files;
-                if (files && files.length > 0) {
-                  // Ici on stocke juste le nom du fichier
-                  setFormData((prev) => ({ ...prev, documentLink: files[0].name }));
-                }
-              }}
+              rows={3}
             />
           </div>
 
@@ -282,7 +268,6 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
               service: "",
               writer: "",
               observations: "",
-              documentLink: "",
             })}>
               Réinitialiser
             </Button>

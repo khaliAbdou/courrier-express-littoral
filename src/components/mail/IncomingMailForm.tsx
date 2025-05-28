@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { MailMedium, MailType } from "@/types/mail";
@@ -44,7 +45,6 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
     senderAddress: "",
     recipientService: "",
     observations: "",
-    documentLink: "",
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -96,7 +96,6 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
       senderAddress: "",
       recipientService: "",
       observations: "",
-      documentLink: "",
     });
   };
 
@@ -106,185 +105,192 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
         <CardTitle>Enregistrer un Courrier Entrant</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Numéro Chrono */}
-          <div>
-            <label className="block font-medium mb-1">
-              Numéro Chrono <span className="text-red-500">*</span>
-            </label>
-            <Input
-              name="chronoNumber"
-              value={formData.chronoNumber}
-              onChange={handleInputChange}
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Première ligne : Numéro Chrono et Date */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">
+                Numéro Chrono <span className="text-red-500">*</span>
+              </label>
+              <Input
+                name="chronoNumber"
+                value={formData.chronoNumber}
+                onChange={handleInputChange}
+                placeholder="Entrez le numéro chronologique"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Date d'arrivée <span className="text-red-500">*</span>
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.date && "text-muted-foreground"
+                    )}
+                    type="button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.date ? format(formData.date, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.date}
+                    onSelect={(date) => handleDateChange("date", date)}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
-          {/* Date d'arrivée */}
-          <div>
-            <label className="block font-medium mb-1">Date d'arrivée <span className="text-red-500">*</span></label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.date && "text-muted-foreground"
-                  )}
-                  type="button"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.date ? format(formData.date, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.date}
-                  onSelect={(date) => handleDateChange("date", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+          {/* Deuxième ligne : Moyen et Type */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">
+                Moyen de réception <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.medium}
+                onValueChange={(val) => handleSelectChange("medium", val)}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un moyen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Physical">Physique</SelectItem>
+                  <SelectItem value="Email">Email</SelectItem>
+                  <SelectItem value="Fax">Fax</SelectItem>
+                  <SelectItem value="Other">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Type de courrier <span className="text-red-500">*</span>
+              </label>
+              <Select
+                value={formData.mailType}
+                onValueChange={(val) => handleSelectChange("mailType", val)}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner un type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Administrative">Administratif</SelectItem>
+                  <SelectItem value="Technical">Technique</SelectItem>
+                  <SelectItem value="Commercial">Commercial</SelectItem>
+                  <SelectItem value="Financial">Financier</SelectItem>
+                  <SelectItem value="Other">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Moyen de réception */}
-          <div>
-            <label className="block font-medium mb-1">
-              Moyen de réception <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={formData.medium}
-              onValueChange={(val) => handleSelectChange("medium", val)}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un moyen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Physical">Physique</SelectItem>
-                <SelectItem value="Email">Email</SelectItem>
-                <SelectItem value="Fax">Fax</SelectItem>
-                <SelectItem value="Other">Autre</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Objet */}
-          <div>
-            <label className="block font-medium mb-1">
+          {/* Troisième ligne : Objet */}
+          <div className="form-group">
+            <label className="form-label">
               Objet <span className="text-red-500">*</span>
             </label>
             <Input
               name="subject"
               value={formData.subject}
               onChange={handleInputChange}
+              placeholder="Entrez l'objet du courrier"
               required
             />
           </div>
 
-          {/* Type de courrier */}
-          <div>
-            <label className="block font-medium mb-1">
-              Type de courrier <span className="text-red-500">*</span>
-            </label>
-            <Select
-              value={formData.mailType}
-              onValueChange={(val) => handleSelectChange("mailType", val)}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Administrative">Administratif</SelectItem>
-                <SelectItem value="Technical">Technique</SelectItem>
-                <SelectItem value="Commercial">Commercial</SelectItem>
-                <SelectItem value="Financial">Financier</SelectItem>
-                <SelectItem value="Other">Autre</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Quatrième ligne : Expéditeur et Service */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">
+                Nom de l'expéditeur <span className="text-red-500">*</span>
+              </label>
+              <Input
+                name="senderName"
+                value={formData.senderName}
+                onChange={handleInputChange}
+                placeholder="Entrez le nom de l'expéditeur"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                Service destinataire <span className="text-red-500">*</span>
+              </label>
+              <Input
+                name="recipientService"
+                value={formData.recipientService}
+                onChange={handleInputChange}
+                placeholder="Entrez le service destinataire"
+                required
+              />
+            </div>
           </div>
 
-          {/* Date de réponse (optionnelle) */}
-          <div>
-            <label className="block font-medium mb-1">Date de réponse</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.responseDate && "text-muted-foreground"
-                  )}
-                  type="button"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.responseDate ? format(formData.responseDate, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.responseDate}
-                  onSelect={(date) => handleDateChange("responseDate", date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
+          {/* Cinquième ligne : Adresse expéditeur et Date de réponse */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">Adresse de l'expéditeur</label>
+              <Input
+                name="senderAddress"
+                value={formData.senderAddress}
+                onChange={handleInputChange}
+                placeholder="Entrez l'adresse de l'expéditeur"
+              />
+            </div>
 
-          {/* Expéditeur */}
-          <div>
-            <label className="block font-medium mb-1">
-              Nom de l'expéditeur <span className="text-red-500">*</span>
-            </label>
-            <Input
-              name="senderName"
-              value={formData.senderName}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div>
-            <label className="block font-medium mb-1">Adresse de l'expéditeur</label>
-            <Input
-              name="senderAddress"
-              value={formData.senderAddress}
-              onChange={handleInputChange}
-            />
-          </div>
-
-          {/* Service destinataire */}
-          <div>
-            <label className="block font-medium mb-1">
-              Service destinataire <span className="text-red-500">*</span>
-            </label>
-            <Input
-              name="recipientService"
-              value={formData.recipientService}
-              onChange={handleInputChange}
-              required
-            />
+            <div className="form-group">
+              <label className="form-label">Date de réponse</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.responseDate && "text-muted-foreground"
+                    )}
+                    type="button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.responseDate ? format(formData.responseDate, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.responseDate}
+                    onSelect={(date) => handleDateChange("responseDate", date)}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
 
           {/* Observations */}
-          <div>
-            <label className="block font-medium mb-1">Observations</label>
+          <div className="form-group">
+            <label className="form-label">Observations</label>
             <Textarea
               name="observations"
               value={formData.observations}
               onChange={handleInputChange}
-              rows={2}
-            />
-          </div>
-          {/* Lien document (optionnel) */}
-          <div>
-            <label className="block font-medium mb-1">Lien vers document</label>
-            <Input
-              name="documentLink"
-              value={formData.documentLink}
-              onChange={handleInputChange}
+              placeholder="Entrez des observations éventuelles"
+              rows={3}
             />
           </div>
 
@@ -304,7 +310,6 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
                   senderAddress: "",
                   recipientService: "",
                   observations: "",
-                  documentLink: "",
                 })
               }
             >
