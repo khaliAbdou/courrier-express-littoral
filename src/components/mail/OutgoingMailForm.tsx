@@ -19,6 +19,13 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 
+function saveOutgoingMailToLocalStorage(mail: any) {
+  const key = "outgoingMails";
+  const existing = localStorage.getItem(key);
+  const mails = existing ? JSON.parse(existing) : [];
+  mails.push(mail);
+  localStorage.setItem(key, JSON.stringify(mails));
+}
 const OutgoingMailForm: React.FC = () => {
   const [formData, setFormData] = useState({
     chronoNumber: "",
@@ -60,7 +67,7 @@ const OutgoingMailForm: React.FC = () => {
     
     // Here we would normally save the data to the database
     console.log("Form submitted with data:", formData);
-    
+    saveOutgoingMailToLocalStorage(formData);
     toast.success("Courrier départ enregistré avec succès!");
     
     // Reset form
