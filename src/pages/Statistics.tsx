@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -9,150 +8,169 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { MailStats, MailType } from "@/types/mail";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { MailType, MailStats } from "@/types/mail";
 
-// Mock data for demonstration
-const mockMonthlyStats: MailStats[] = [
-  {
-    month: "Janvier",
-    year: 2023,
-    incomingCount: 42,
-    outgoingCount: 38,
-    byType: {
-      Administrative: 15,
-      Technical: 18,
-      Commercial: 5,
-      Financial: 4,
-      Other: 0,
-    },
-  },
-  {
-    month: "Février",
-    year: 2023,
-    incomingCount: 35,
-    outgoingCount: 30,
-    byType: {
-      Administrative: 12,
-      Technical: 14,
-      Commercial: 6,
-      Financial: 3,
-      Other: 0,
-    },
-  },
-  {
-    month: "Mars",
-    year: 2023,
-    incomingCount: 45,
-    outgoingCount: 40,
-    byType: {
-      Administrative: 18,
-      Technical: 15,
-      Commercial: 7,
-      Financial: 5,
-      Other: 0,
-    },
-  },
-  {
-    month: "Avril",
-    year: 2023,
-    incomingCount: 38,
-    outgoingCount: 35,
-    byType: {
-      Administrative: 14,
-      Technical: 16,
-      Commercial: 5,
-      Financial: 3,
-      Other: 0,
-    },
-  },
-  {
-    month: "Mai",
-    year: 2023,
-    incomingCount: 40,
-    outgoingCount: 38,
-    byType: {
-      Administrative: 16,
-      Technical: 14,
-      Commercial: 6,
-      Financial: 4,
-      Other: 0,
-    },
-  },
-  {
-    month: "Juin",
-    year: 2023,
-    incomingCount: 48,
-    outgoingCount: 42,
-    byType: {
-      Administrative: 20,
-      Technical: 15,
-      Commercial: 8,
-      Financial: 5,
-      Other: 0,
-    },
-  },
+// Fonctions utilitaires pour lire les courriers du localStorage
+function getAllIncomingMails() {
+  const key = "incomingMails";
+  const existing = localStorage.getItem(key);
+  if (!existing) return [];
+  return JSON.parse(existing).map((mail: any) => ({
+    ...mail,
+    date: mail.date ? new Date(mail.date) : undefined,
+  }));
+}
+function getAllOutgoingMails() {
+  const key = "outgoingMails";
+  const existing = localStorage.getItem(key);
+  if (!existing) return [];
+  return JSON.parse(existing).map((mail: any) => ({
+    ...mail,
+    date: mail.date ? new Date(mail.date) : undefined,
+  }));
+}
+
+// Tableau des noms de mois (français)
+const monthNames = [
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-// Prepare data for charts
+// Préparer les statistiques mensuelles et annuelles à partir des courriers stockés
+function computeMonthlyStats(incomings: any[], outgoings: any[]): MailStats[] {
+  // Objet : { [year-month]: { ... } }
+  const statsMap: { [key: string]: MailStats } = {};
+
+  incomings.forEach((mail) => {
+    if (!mail.date) return;
+    const d = new Date(mail.date);
+    const year = d.getFullYear();
+    const monthIdx = d.getMonth();
+    const month = monthNames[monthIdx];
+    const key = `${year}-${month}`;
+
+    if (!statsMap[key]) {
+      statsMap[key] = {
+        month,
+        year,
+        incomingCount: 0,
+        outgoingCount: 0,
+        byType: {
+          Administrative: 0,
+          Technical: 0,
+          Commercial: 0,
+          Financial: 0,
+          Other: 0
+        }
+      };
+    }
+    statsMap[key].incomingCount += 1;
+    const type = mail.mailType || "Other";
+    statsMap[key].byType[type] = (statsMap[key].byType[type] || 0) + 1;
+  });
+
+  outgoings.forEach((mail) => {
+    if (!mail.date) return;
+    const d = new Date(mail.date);
+    const year = d.getFullYear();
+    const monthIdx = d.getMonth();
+    const month = monthNames[monthIdx];
+    const key = `${year}-${month}`;
+
+    if (!statsMap[key]) {
+      statsMap[key] = {
+        month,
+        year,
+        incomingCount: 0,
+        outgoingCount: 0,
+        byType: {
+          Administrative: 0,
+          Technical: 0,
+          Commercial: 0,
+          Financial: 0,
+          Other: 0
+        }
+      };
+    }
+    statsMap[key].outgoingCount += 1;
+    // Pour outgoing, on ne connaît pas forcément le type, donc on n'incrémente pas byType
+  });
+
+  // Trie par année puis par mois
+  return Object.values(statsMap).sort((a, b) => {
+    if (a.year !== b.year) return a.year - b.year;
+    return monthNames.indexOf(a.month) - monthNames.indexOf(b.month);
+  });
+}
+
 const prepareBarChartData = (stats: MailStats[]) => {
   return stats.map((stat) => ({
-    name: stat.month,
+    name: `${stat.month} ${stat.year}`,
     "Courriers Entrants": stat.incomingCount,
     "Courriers Départs": stat.outgoingCount,
   }));
 };
 
-const preparePieChartData = (stats: MailStats[], selectedMonth: string) => {
-  const monthlyStat = stats.find((stat) => stat.month === selectedMonth);
-  
-  if (!monthlyStat) return [];
-  
+const preparePieChartData = (stat: MailStats | undefined) => {
+  if (!stat) return [];
   return [
     {
       name: "Administratif",
-      value: monthlyStat.byType.Administrative,
+      value: stat.byType.Administrative,
       color: "#3b82f6", // blue
     },
     {
       name: "Technique",
-      value: monthlyStat.byType.Technical,
+      value: stat.byType.Technical,
       color: "#10b981", // green
     },
     {
       name: "Commercial",
-      value: monthlyStat.byType.Commercial,
+      value: stat.byType.Commercial,
       color: "#f59e0b", // yellow
     },
     {
       name: "Financier",
-      value: monthlyStat.byType.Financial,
+      value: stat.byType.Financial,
       color: "#ef4444", // red
     },
     {
       name: "Autre",
-      value: monthlyStat.byType.Other,
+      value: stat.byType.Other,
       color: "#8b5cf6", // purple
     },
   ].filter((item) => item.value > 0);
 };
 
 const StatisticsPage: React.FC = () => {
-  const [selectedMonth, setSelectedMonth] = useState<string>("Juin");
-  const [selectedYear, setSelectedYear] = useState<number>(2023);
-  
-  const barChartData = prepareBarChartData(mockMonthlyStats);
-  const pieChartData = preparePieChartData(mockMonthlyStats, selectedMonth);
-  
-  const monthlyStat = mockMonthlyStats.find((stat) => stat.month === selectedMonth);
-  
+  // On relit à chaque render pour que ce soit toujours à jour si formulaire utilisé dans un autre onglet
+  const incomingMails = getAllIncomingMails();
+  const outgoingMails = getAllOutgoingMails();
+  const monthlyStats = useMemo(() => computeMonthlyStats(incomingMails, outgoingMails), [incomingMails, outgoingMails]);
+
+  // Récupère toutes les années et tous les mois présents dans les stats réelles
+  const years = Array.from(new Set(monthlyStats.map((s) => s.year))).sort((a, b) => b - a);
+  const months = monthNames.filter((m) => monthlyStats.find((s) => s.month === m));
+
+  // Valeurs par défaut : dernier mois/année disponible ou valeurs pré-remplies
+  const [selectedYear, setSelectedYear] = useState<number>(years[0] || new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<string>(months[months.length - 1] || monthNames[new Date().getMonth()]);
+
+  // Les stats du mois/année filtrés
+  const monthlyStat = monthlyStats.find((stat) => stat.year === selectedYear && stat.month === selectedMonth);
+
+  // Données pour graphiques
+  const barChartData = prepareBarChartData(monthlyStats.filter(stat => stat.year === selectedYear));
+  const pieChartData = preparePieChartData(monthlyStat);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
-      
+
       <div className="page-container flex-1">
         <h1 className="page-title">Statistiques</h1>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardHeader>
@@ -162,43 +180,45 @@ const StatisticsPage: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="form-group">
                   <label className="form-label">Mois</label>
-                  <Select 
-                    value={selectedMonth} 
+                  <Select
+                    value={selectedMonth}
                     onValueChange={setSelectedMonth}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionnez un mois" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockMonthlyStats.map((stat) => (
-                        <SelectItem key={stat.month} value={stat.month}>
-                          {stat.month}
+                      {months.map((month) => (
+                        <SelectItem key={month} value={month}>
+                          {month}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="form-group">
                   <label className="form-label">Année</label>
-                  <Select 
-                    value={selectedYear.toString()} 
+                  <Select
+                    value={selectedYear.toString()}
                     onValueChange={(value) => setSelectedYear(parseInt(value))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionnez une année" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2023">2023</SelectItem>
-                      <SelectItem value="2022">2022</SelectItem>
-                      <SelectItem value="2021">2021</SelectItem>
+                      {years.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Résumé {selectedMonth} {selectedYear}</CardTitle>
@@ -211,14 +231,14 @@ const StatisticsPage: React.FC = () => {
                     {monthlyStat?.incomingCount || 0}
                   </p>
                 </div>
-                
+
                 <div className="border rounded-lg p-4 text-center">
                   <p className="text-sm text-gray-500">Courriers Départs</p>
                   <p className="text-2xl font-bold text-green-600">
                     {monthlyStat?.outgoingCount || 0}
                   </p>
                 </div>
-                
+
                 <div className="border rounded-lg p-4 text-center col-span-2">
                   <p className="text-sm text-gray-500">Total Courriers</p>
                   <p className="text-2xl font-bold text-purple-600">
@@ -229,7 +249,7 @@ const StatisticsPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="grid grid-cols-1 gap-6 mb-8">
           <Card>
             <CardHeader>
@@ -250,7 +270,7 @@ const StatisticsPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -278,7 +298,7 @@ const StatisticsPage: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Détails par Type - {selectedMonth} {selectedYear}</CardTitle>
@@ -289,23 +309,23 @@ const StatisticsPage: React.FC = () => {
                   count > 0 && (
                     <div key={type} className="flex items-center justify-between">
                       <div className="flex items-center">
-                        <div 
-                          className="w-3 h-3 rounded-full mr-2" 
-                          style={{ 
-                            backgroundColor: 
-                              type === "Administrative" ? "#3b82f6" : 
-                              type === "Technical" ? "#10b981" : 
-                              type === "Commercial" ? "#f59e0b" : 
-                              type === "Financial" ? "#ef4444" : 
-                              "#8b5cf6" 
+                        <div
+                          className="w-3 h-3 rounded-full mr-2"
+                          style={{
+                            backgroundColor:
+                              type === "Administrative" ? "#3b82f6" :
+                                type === "Technical" ? "#10b981" :
+                                  type === "Commercial" ? "#f59e0b" :
+                                    type === "Financial" ? "#ef4444" :
+                                      "#8b5cf6"
                           }}
                         ></div>
                         <span>{
-                          type === "Administrative" ? "Administratif" : 
-                          type === "Technical" ? "Technique" : 
-                          type === "Commercial" ? "Commercial" : 
-                          type === "Financial" ? "Financier" : 
-                          "Autre"
+                          type === "Administrative" ? "Administratif" :
+                            type === "Technical" ? "Technique" :
+                              type === "Commercial" ? "Commercial" :
+                                type === "Financial" ? "Financier" :
+                                  "Autre"
                         }</span>
                       </div>
                       <div className="font-bold">{count}</div>
@@ -313,14 +333,14 @@ const StatisticsPage: React.FC = () => {
                   )
                 ))}
               </div>
-              
+
               <div className="mt-6 pt-4 border-t">
                 <div className="flex items-center justify-between font-bold">
                   <span>Total</span>
                   <span>{
-                    monthlyStat ? 
-                    Object.values(monthlyStat.byType).reduce((sum, count) => sum + count, 0) : 
-                    0
+                    monthlyStat ?
+                      Object.values(monthlyStat.byType).reduce((sum, count) => sum + count, 0) :
+                      0
                   }</span>
                 </div>
               </div>
@@ -328,10 +348,10 @@ const StatisticsPage: React.FC = () => {
           </Card>
         </div>
       </div>
-      
+
       <footer className="bg-white border-t py-6 mt-8">
         <div className="container mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>© 2023 Antenne du Littoral de l'Agence des Normes et de la Qualité. Tous droits réservés.</p>
+          <p>© {new Date().getFullYear()} Antenne du Littoral de l'Agence des Normes et de la Qualité. Tous droits réservés.</p>
         </div>
       </footer>
     </div>
