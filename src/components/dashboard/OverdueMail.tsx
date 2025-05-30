@@ -1,50 +1,51 @@
-import React, { useMemo } from "react";
-import { IncomingMail } from "@/types/mail";
-import { AlertCircle } from "lucide-react";
-import MailTable from "../mail/MailTable";
 
-// Fonction utilitaire pour lire les courriers entrants du localStorage
-function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-    responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-  }));
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
+import { IncomingMail } from "@/types/mail";
+
+interface OverdueMailProps {
+  overdueEmails: IncomingMail[];
 }
 
-const OverdueMail: React.FC = () => {
-  // On utilise useMemo pour éviter une lecture à chaque render
-  const overdueEmails = useMemo(() => {
-    return getAllIncomingMails().filter((mail) => mail.status === "Overdue");
-  }, []);
-
+const OverdueMail: React.FC<OverdueMailProps> = ({ overdueEmails }) => {
   return (
-    <div className="mb-8">
-      <div className="flex items-center mb-4">
-        <AlertCircle className="h-5 w-5 text-agency-red mr-2" />
-        <h2 className="text-xl font-bold text-agency-red">
-          Courriers en retard ({overdueEmails.length})
-        </h2>
-      </div>
-
-      {overdueEmails.length > 0 ? (
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="p-4 bg-red-50 border-b border-red-100">
-            <p className="text-sm text-agency-red">
-              Ces courriers nécessitent une attention immédiate. Veuillez les traiter dès que possible.
-            </p>
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle className="text-agency-blue flex items-center">
+          <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
+          Courriers en Retard ({overdueEmails.length})
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {overdueEmails.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">Aucun courrier en retard</p>
+        ) : (
+          <div className="space-y-3">
+            {overdueEmails.slice(0, 5).map((mail) => (
+              <div key={mail.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+                <div>
+                  <p className="font-medium text-gray-900">{mail.subject}</p>
+                  <p className="text-sm text-gray-500">
+                    {mail.senderName} • {mail.date ? new Date(mail.date).toLocaleDateString('fr-FR') : 'Date non définie'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    En retard
+                  </span>
+                </div>
+              </div>
+            ))}
+            {overdueEmails.length > 5 && (
+              <p className="text-center text-sm text-gray-500 mt-4">
+                Et {overdueEmails.length - 5} autres courriers en retard
+              </p>
+            )}
           </div>
-          <MailTable mails={overdueEmails} type="incoming" />
-        </div>
-      ) : (
-        <div className="bg-green-50 text-green-700 p-4 rounded-lg border border-green-200">
-          <p>Aucun courrier en retard. Tout est à jour !</p>
-        </div>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

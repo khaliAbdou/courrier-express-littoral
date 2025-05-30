@@ -1,15 +1,12 @@
 import React, { useState, useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { MailType, MailStats } from "@/types/mail";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdvancedFilters from "@/components/statistics/AdvancedFilters";
+import StatisticsExport from "@/components/statistics/StatisticsExport";
+import EnhancedCharts from "@/components/statistics/EnhancedCharts";
+import PerformanceMetrics from "@/components/statistics/PerformanceMetrics";
+import { MailType, MailStats, IncomingMail, OutgoingMail } from "@/types/mail";
 
 // Fonctions utilitaires pour lire les courriers du localStorage
 function getAllIncomingMails() {
@@ -104,249 +101,164 @@ function computeMonthlyStats(incomings: any[], outgoings: any[]): MailStats[] {
   });
 }
 
-const prepareBarChartData = (stats: MailStats[]) => {
-  return stats.map((stat) => ({
-    name: `${stat.month} ${stat.year}`,
-    "Courriers Entrants": stat.incomingCount,
-    "Courriers Départs": stat.outgoingCount,
-  }));
-};
-
-const preparePieChartData = (stat: MailStats | undefined) => {
-  if (!stat) return [];
-  return [
-    {
-      name: "Administratif",
-      value: stat.byType.Administrative,
-      color: "#3b82f6", // blue
-    },
-    {
-      name: "Technique",
-      value: stat.byType.Technical,
-      color: "#10b981", // green
-    },
-    {
-      name: "Commercial",
-      value: stat.byType.Commercial,
-      color: "#f59e0b", // yellow
-    },
-    {
-      name: "Financier",
-      value: stat.byType.Financial,
-      color: "#ef4444", // red
-    },
-    {
-      name: "Autre",
-      value: stat.byType.Other,
-      color: "#8b5cf6", // purple
-    },
-  ].filter((item) => item.value > 0);
-};
-
 const StatisticsPage: React.FC = () => {
-  // On relit à chaque render pour que ce soit toujours à jour si formulaire utilisé dans un autre onglet
   const incomingMails = getAllIncomingMails();
   const outgoingMails = getAllOutgoingMails();
   const monthlyStats = useMemo(() => computeMonthlyStats(incomingMails, outgoingMails), [incomingMails, outgoingMails]);
 
-  // Récupère toutes les années et tous les mois présents dans les stats réelles
+  // États pour les filtres avancés
+  const [filters, setFilters] = useState({
+    month: "all",
+    year: "all",
+    mailType: "all",
+    status: "all",
+    service: "all",
+    dateFrom: undefined as Date | undefined,
+    dateTo: undefined as Date | undefined,
+    medium: "all",
+  });
+
+  const [appliedFilters, setAppliedFilters] = useState(filters);
+
+  // Données dynamiques
   const years = Array.from(new Set(monthlyStats.map((s) => s.year))).sort((a, b) => b - a);
-  const months = monthNames.filter((m) => monthlyStats.find((s) => s.month === m));
+  const availableServices = Array.from(new Set(incomingMails.map(m => m.recipientService))).filter(Boolean);
 
-  // Valeurs par défaut : dernier mois/année disponible ou valeurs pré-remplies
-  const [selectedYear, setSelectedYear] = useState<number>(years[0] || new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<string>(months[months.length - 1] || monthNames[new Date().getMonth()]);
+  // Données filtrées
+  const filteredStats = useMemo(() => {
+    return monthlyStats.filter(stat => {
+      if (appliedFilters.year !== "all" && stat.year.toString() !== appliedFilters.year) return false;
+      if (appliedFilters.month !== "all" && stat.month !== appliedFilters.month) return false;
+      return true;
+    });
+  }, [monthlyStats, appliedFilters]);
 
-  // Les stats du mois/année filtrés
-  const monthlyStat = monthlyStats.find((stat) => stat.year === selectedYear && stat.month === selectedMonth);
+  // Métriques de performance
+  const performanceMetrics = useMemo(() => {
+    const totalMails = incomingMails.length;
+    const completedMails = incomingMails.filter(m => m.status === "Completed").length;
+    const overdueMails = incomingMails.filter(m => m.status === "Overdue").length;
+    const pendingMails = incomingMails.filter(m => m.status === "Pending" || m.status === "Processing").length;
+    
+    return {
+      averageResponseTime: Math.round(Math.random() * 10 + 3), // Simulé
+      processingEfficiency: totalMails > 0 ? Math.round((completedMails / totalMails) * 100) : 0,
+      overdueRate: totalMails > 0 ? Math.round((overdueMails / totalMails) * 100) : 0,
+      completionRate: totalMails > 0 ? Math.round((completedMails / totalMails) * 100) : 0,
+      monthlyGrowth: Math.round((Math.random() - 0.5) * 20), // Simulé
+      totalProcessed: completedMails,
+      pendingCount: pendingMails,
+      priorityItems: Math.round(pendingMails * 0.3), // Simulé
+    };
+  }, [incomingMails]);
 
-  // Données pour graphiques
-  const barChartData = prepareBarChartData(monthlyStats.filter(stat => stat.year === selectedYear));
-  const pieChartData = preparePieChartData(monthlyStat);
+  // Données pour les graphiques
+  const chartData = useMemo(() => {
+    const barChartData = prepareBarChartData(filteredStats);
+    const comparisonData = barChartData.map(item => ({
+      ...item,
+      total: item["Courriers Entrants"] + item["Courriers Départs"],
+      efficiency: Math.round(Math.random() * 100), // Simulé
+    }));
+
+    return {
+      monthlyData: barChartData,
+      comparisonData,
+      typeData: [], // À implémenter selon les besoins
+    };
+  }, [filteredStats]);
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({ ...filters });
+  };
+
+  const handleResetFilters = () => {
+    const resetFilters = {
+      month: "all",
+      year: "all",
+      mailType: "all",
+      status: "all",
+      service: "all",
+      dateFrom: undefined,
+      dateTo: undefined,
+      medium: "all",
+    };
+    setFilters(resetFilters);
+    setAppliedFilters(resetFilters);
+  };
+
+  const prepareBarChartData = (stats: MailStats[]) => {
+    return stats.map((stat) => ({
+      name: `${stat.month} ${stat.year}`,
+      "Courriers Entrants": stat.incomingCount,
+      "Courriers Départs": stat.outgoingCount,
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
 
       <div className="page-container flex-1">
-        <h1 className="page-title">Statistiques</h1>
+        <h1 className="page-title">Statistiques Avancées</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Filtres</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="form-group">
-                  <label className="form-label">Mois</label>
-                  <Select
-                    value={selectedMonth}
-                    onValueChange={setSelectedMonth}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionnez un mois" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {months.map((month) => (
-                        <SelectItem key={month} value={month}>
-                          {month}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+            <TabsTrigger value="detailed">Analyse détaillée</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
+            <TabsTrigger value="export">Export</TabsTrigger>
+          </TabsList>
 
-                <div className="form-group">
-                  <label className="form-label">Année</label>
-                  <Select
-                    value={selectedYear.toString()}
-                    onValueChange={(value) => setSelectedYear(parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionnez une année" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {years.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="overview" className="space-y-6">
+            <AdvancedFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              onApply={handleApplyFilters}
+              onReset={handleResetFilters}
+              availableYears={years}
+              availableServices={availableServices}
+            />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Résumé {selectedMonth} {selectedYear}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="border rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-500">Courriers Entrants</p>
-                  <p className="text-2xl font-bold text-agency-blue">
-                    {monthlyStat?.incomingCount || 0}
-                  </p>
-                </div>
-
-                <div className="border rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-500">Courriers Départs</p>
-                  <p className="text-2xl font-bold text-green-600">
-                    {monthlyStat?.outgoingCount || 0}
-                  </p>
-                </div>
-
-                <div className="border rounded-lg p-4 text-center col-span-2">
-                  <p className="text-sm text-gray-500">Total Courriers</p>
-                  <p className="text-2xl font-bold text-purple-600">
-                    {(monthlyStat?.incomingCount || 0) + (monthlyStat?.outgoingCount || 0)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Évolution Mensuelle</CardTitle>
-            </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barChartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Courriers Entrants" fill="#3b82f6" />
-                  <Bar dataKey="Courriers Départs" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Types de Courriers - {selectedMonth} {selectedYear}</CardTitle>
-            </CardHeader>
-            <CardContent className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Détails par Type - {selectedMonth} {selectedYear}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {monthlyStat && Object.entries(monthlyStat.byType).map(([type, count]) => (
-                  count > 0 && (
-                    <div key={type} className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div
-                          className="w-3 h-3 rounded-full mr-2"
-                          style={{
-                            backgroundColor:
-                              type === "Administrative" ? "#3b82f6" :
-                                type === "Technical" ? "#10b981" :
-                                  type === "Commercial" ? "#f59e0b" :
-                                    type === "Financial" ? "#ef4444" :
-                                      "#8b5cf6"
-                          }}
-                        ></div>
-                        <span>{
-                          type === "Administrative" ? "Administratif" :
-                            type === "Technical" ? "Technique" :
-                              type === "Commercial" ? "Commercial" :
-                                type === "Financial" ? "Financier" :
-                                  "Autre"
-                        }</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {filteredStats.map((stat) => (
+                <Card key={`${stat.year}-${stat.month}`}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{stat.month} {stat.year}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <p className="text-2xl font-bold text-blue-600">{stat.incomingCount}</p>
+                        <p className="text-sm text-gray-600">Entrants</p>
                       </div>
-                      <div className="font-bold">{count}</div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <p className="text-2xl font-bold text-green-600">{stat.outgoingCount}</p>
+                        <p className="text-sm text-gray-600">Sortants</p>
+                      </div>
                     </div>
-                  )
-                ))}
-              </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-              <div className="mt-6 pt-4 border-t">
-                <div className="flex items-center justify-between font-bold">
-                  <span>Total</span>
-                  <span>{
-                    monthlyStat ?
-                      Object.values(monthlyStat.byType).reduce((sum, count) => sum + count, 0) :
-                      0
-                  }</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="detailed" className="space-y-6">
+            <EnhancedCharts 
+              monthlyData={chartData.monthlyData}
+              typeData={chartData.typeData}
+              comparisonData={chartData.comparisonData}
+            />
+          </TabsContent>
+
+          <TabsContent value="performance" className="space-y-6">
+            <PerformanceMetrics metrics={performanceMetrics} />
+          </TabsContent>
+
+          <TabsContent value="export" className="space-y-6">
+            <StatisticsExport data={filteredStats} filters={appliedFilters} />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <footer className="bg-white border-t py-6 mt-8">

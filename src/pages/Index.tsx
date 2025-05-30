@@ -1,3 +1,4 @@
+
 import React from "react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -50,7 +51,12 @@ const Index: React.FC = () => {
           </p>
         </div>
 
-        <DashboardStats {...stats} />
+        <DashboardStats 
+          totalIncoming={stats.totalIncoming}
+          totalOutgoing={stats.totalOutgoing}
+          pending={stats.pending}
+          processed={stats.processed}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <MonthlyTrendChart />
