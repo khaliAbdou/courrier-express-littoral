@@ -122,7 +122,13 @@ const StatisticsPage: React.FC = () => {
 
   // Données dynamiques
   const years = Array.from(new Set(monthlyStats.map((s) => s.year))).sort((a, b) => b - a);
-  const availableServices = Array.from(new Set(incomingMails.map(m => m.recipientService))).filter(Boolean);
+  const availableServices = Array.from(
+    new Set(
+      incomingMails
+        .map(m => m.recipientService)
+        .filter((service): service is string => Boolean(service))
+    )
+  );
 
   // Données filtrées
   const filteredStats = useMemo(() => {
