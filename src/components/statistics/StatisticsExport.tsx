@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,13 @@ import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+
+// Déclaration de type pour jspdf-autotable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
 
 interface StatisticsExportProps {
   data: any;
@@ -125,7 +133,7 @@ const StatisticsExport: React.FC<StatisticsExportProps> = ({ data, filters }) =>
       ]);
 
       // Créer le tableau
-      (doc as any).autoTable({
+      doc.autoTable({
         head: [['Mois', 'Année', 'Courriers Entrants', 'Courriers Sortants', 'Total']],
         body: tableData,
         startY: 40,
