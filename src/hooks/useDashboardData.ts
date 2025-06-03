@@ -1,9 +1,31 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { IncomingMail } from "@/types/mail";
+import { IncomingMail, OutgoingMail } from "@/types/mail";
 import { toast } from "@/components/ui/sonner";
 import React from "react";
+
+// Fonctions pour récupérer les courriers du localStorage
+function getAllIncomingMails(): IncomingMail[] {
+  const key = "incomingMails";
+  const existing = localStorage.getItem(key);
+  if (!existing) return [];
+  return JSON.parse(existing).map((mail: any) => ({
+    ...mail,
+    date: mail.date ? new Date(mail.date) : undefined,
+    responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
+  }));
+}
+
+function getAllOutgoingMails(): OutgoingMail[] {
+  const key = "outgoingMails";
+  const existing = localStorage.getItem(key);
+  if (!existing) return [];
+  return JSON.parse(existing).map((mail: any) => ({
+    ...mail,
+    date: mail.date ? new Date(mail.date) : undefined,
+  }));
+}
 
 // Fonction pour récupérer les statistiques depuis Supabase
 const fetchMailStats = async () => {
@@ -66,6 +88,10 @@ export const useDashboardData = () => {
     queryFn: fetchOverdueMails,
   });
   
+  // Récupération des vraies données du localStorage
+  const incomingMails = getAllIncomingMails();
+  const outgoingMails = getAllOutgoingMails();
+  
   // Gestion des erreurs via React Error Boundary ou useEffect si nécessaire
   React.useEffect(() => {
     if (mailStats === null) {
@@ -73,17 +99,17 @@ export const useDashboardData = () => {
     }
   }, [mailStats]);
   
-  // Stats calculées (utiliser les vraies données ou les mock si non disponibles)
+  // Stats calculées basées sur les vraies données
   const stats = {
-    totalIncoming: mailStats?.reduce((sum, stat) => sum + stat.incoming_count, 0) || 45,
-    totalOutgoing: mailStats?.reduce((sum, stat) => sum + stat.outgoing_count, 0) || 38,
-    pending: 12, // À calculer en fonction des statuts réels
-    processed: 71, // À calculer en fonction des statuts réels
+    totalIncoming: incomingMails.length,
+    totalOutgoing: outgoingMails.length,
+    pending: incomingMails.filter(mail => mail.status === "Pending" || mail.status === "Processing").length,
+    processed: incomingMails.filter(mail => mail.status === "Completed").length,
   };
 
   return {
     mailStats,
-    overdueMails,
+    overdueMails: overdueMails || [],
     stats,
     statsLoading,
     overdueLoading,
