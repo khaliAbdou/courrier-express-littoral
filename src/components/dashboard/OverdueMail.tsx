@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, Calendar, User } from "lucide-react";
+import { AlertCircle, Calendar, User, CheckCircle } from "lucide-react";
 import { IncomingMail } from "@/types/mail";
 
 interface OverdueMailProps {
