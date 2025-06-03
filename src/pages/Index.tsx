@@ -17,11 +17,16 @@ function getAllIncomingMails(): IncomingMail[] {
   const key = "incomingMails";
   const existing = localStorage.getItem(key);
   if (!existing) return [];
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-    responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-  }));
+  try {
+    return JSON.parse(existing).map((mail: any) => ({
+      ...mail,
+      date: mail.date ? new Date(mail.date) : undefined,
+      responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des courriers:", error);
+    return [];
+  }
 }
 
 function getOverdueMails(): IncomingMail[] {
@@ -29,7 +34,7 @@ function getOverdueMails(): IncomingMail[] {
 }
 
 const Index: React.FC = () => {
-  const { overdueMails: hookOverdueMails, stats } = useDashboardData();
+  const { overdueMails: hookOverdueMails, stats, statsLoading } = useDashboardData();
 
   // Privilégie les mails du hook s'ils existent, sinon récupère localStorage
   const overdueMails = hookOverdueMails && hookOverdueMails.length > 0
@@ -44,19 +49,44 @@ const Index: React.FC = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-6 flex-1">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 md:mb-0">Tableau de Bord</h1>
-          <p className="text-gray-500">
-            {formattedDateCapitalized}
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 animate-fade-in">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+              Tableau de Bord
+            </h1>
+            <p className="text-gray-600">
+              Vue d'ensemble de la gestion du courrier
+            </p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <p className="text-gray-500 text-sm">
+              {formattedDateCapitalized}
+            </p>
+          </div>
         </div>
 
-        <DashboardStats 
-          totalIncoming={stats.totalIncoming}
-          totalOutgoing={stats.totalOutgoing}
-          pending={stats.pending}
-          processed={stats.processed}
-        />
+        {statsLoading ? (
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-white rounded-lg p-6 shadow">
+                    <div className="h-12 w-12 bg-gray-200 rounded-full mb-4 mx-auto"></div>
+                    <div className="h-6 w-16 bg-gray-200 rounded mb-1 mx-auto"></div>
+                    <div className="h-4 w-24 bg-gray-200 rounded mx-auto"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <DashboardStats 
+            totalIncoming={stats.totalIncoming}
+            totalOutgoing={stats.totalOutgoing}
+            pending={stats.pending}
+            processed={stats.processed}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <MonthlyTrendChart />
