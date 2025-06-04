@@ -1,3 +1,4 @@
+
 import React from "react";
 import Navbar from "@/components/layout/Navbar";
 import DashboardStats from "@/components/dashboard/DashboardStats";
@@ -7,8 +8,11 @@ import MailTypeChart from "@/components/dashboard/MailTypeChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import OverdueMail from "@/components/dashboard/OverdueMail";
 import OverdueAlerts from "@/components/alerts/OverdueAlerts";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Index = () => {
+  const { stats, overdueMails } = useDashboardData();
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
@@ -35,7 +39,12 @@ const Index = () => {
         {/* Dashboard Stats and Quick Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           <div className="lg:col-span-2">
-            <DashboardStats />
+            <DashboardStats 
+              totalIncoming={stats.totalIncoming}
+              totalOutgoing={stats.totalOutgoing}
+              pending={stats.pending}
+              processed={stats.processed}
+            />
           </div>
           <div>
             <QuickActions />
@@ -51,7 +60,7 @@ const Index = () => {
         {/* Recent Activity and Overdue Mail */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <RecentActivity />
-          <OverdueMail />
+          <OverdueMail overdueEmails={overdueMails} />
         </div>
       </div>
 
