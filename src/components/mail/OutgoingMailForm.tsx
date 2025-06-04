@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { MailMedium } from "@/types/mail";
@@ -18,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { AuditLogger } from '@/utils/auditLogger';
 
 function saveOutgoingMailToLocalStorage(mail: any) {
   const key = "outgoingMails";
@@ -70,7 +70,13 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
       return;
     }
 
-    saveOutgoingMailToLocalStorage(formData);
+    const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const mailWithId = { ...formData, id: mailId };
+
+    saveOutgoingMailToLocalStorage(mailWithId);
+
+    // Log d'audit
+    AuditLogger.logMailCreate('outgoing', mailId, formData.chronoNumber);
 
     // Rafraîchir la liste si le parent fournit la prop
     if (onMailSaved) onMailSaved();

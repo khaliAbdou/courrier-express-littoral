@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { MailMedium, MailType } from "@/types/mail";
@@ -18,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
+import { AuditLogger } from '@/utils/auditLogger';
 
 // Fonction d'enregistrement dans le localStorage (avec status)
 function saveIncomingMailToLocalStorage(mail: any) {
@@ -76,8 +76,14 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
       return;
     }
 
+    const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const mailWithId = { ...formData, id: mailId };
+
     // Enregistre dans le localStorage (avec status)
-    saveIncomingMailToLocalStorage(formData);
+    saveIncomingMailToLocalStorage(mailWithId);
+
+    // Log d'audit
+    AuditLogger.logMailCreate('incoming', mailId, formData.chronoNumber);
 
     // Rafraîchir la liste si le parent fournit la prop
     if (onMailSaved) onMailSaved();

@@ -1,9 +1,9 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { AuditLogger } from '@/utils/auditLogger';
 
 interface StatisticsExportProps {
   data: any;
@@ -28,6 +28,9 @@ const StatisticsExport: React.FC<StatisticsExportProps> = ({ data, filters }) =>
       document.body.removeChild(link);
       
       toast.success("Export CSV réussi !");
+      
+      // Log d'audit
+      AuditLogger.logExport('csv', data?.length || 0);
     } catch (error) {
       toast.error("Erreur lors de l'export CSV");
     }
