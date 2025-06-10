@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import OutgoingMailForm from "@/components/mail/OutgoingMailForm";
@@ -7,17 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-
-// Fonction utilitaire pour récupérer les courriers sortants du localStorage
-function getAllOutgoingMails(): OutgoingMail[] {
-  const key = "outgoingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-  }));
-}
+import { getAllOutgoingMails } from "@/utils/outgoingMailStorage";
 
 const OutgoingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,7 +20,6 @@ const OutgoingMailPage: React.FC = () => {
     setFilteredMails(mails);
   }, [refresh]);
 
-  // Rafraîchit la liste après ajout
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
   };
@@ -83,7 +73,7 @@ const OutgoingMailPage: React.FC = () => {
                   )}
                 </form>
               </div>
-              <MailTable mails={filteredMails} type="outgoing" />
+              <MailTable mails={filteredMails} type="outgoing" onMailUpdated={handleNewMail} />
             </div>
           </TabsContent>
           <TabsContent value="register" className="mt-0">

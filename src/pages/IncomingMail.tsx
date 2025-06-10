@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import IncomingMailForm from "@/components/mail/IncomingMailForm";
@@ -7,22 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-
-// Fonction utilitaire pour récupérer les courriers entrants du localStorage en toute sécurité
-function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  try {
-    return JSON.parse(existing).map((mail: any) => ({
-      ...mail,
-      date: mail.date ? new Date(mail.date) : undefined,
-      responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-    }));
-  } catch {
-    return [];
-  }
-}
+import { getAllIncomingMails } from "@/utils/incomingMailStorage";
 
 const IncomingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,7 +20,6 @@ const IncomingMailPage: React.FC = () => {
     setFilteredMails(mails);
   }, [refresh]);
 
-  // Rafraîchit la liste après ajout
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
   };
@@ -88,12 +73,10 @@ const IncomingMailPage: React.FC = () => {
                   )}
                 </form>
               </div>
-              <MailTable mails={filteredMails} type="incoming" />
+              <MailTable mails={filteredMails} type="incoming" onMailUpdated={handleNewMail} />
             </div>
           </TabsContent>
           <TabsContent value="register" className="mt-0">
-            {/* Texte de test pour vérifier l'affichage du formulaire */}
-            {/* <div style={{ padding: 16, color: 'blue' }}>TEST FORMULAIRE</div> */}
             <IncomingMailForm onMailSaved={handleNewMail} />
           </TabsContent>
         </Tabs>

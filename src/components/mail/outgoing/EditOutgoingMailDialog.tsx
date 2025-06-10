@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { MailMedium, MailType } from "@/types/mail";
+import { OutgoingMail, MailMedium } from "@/types/mail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,32 +12,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
-import { AuditLogger } from '@/utils/auditLogger';
-import { saveIncomingMailToLocalStorage } from "@/utils/incomingMailStorage";
+import { updateOutgoingMailInLocalStorage } from "@/utils/outgoingMailStorage";
 
-interface IncomingMailFormProps {
-  onMailSaved?: () => void;
+interface EditOutgoingMailDialogProps {
+  mail: OutgoingMail;
+  isOpen: boolean;
+  onClose: () => void;
+  onMailUpdated: () => void;
 }
 
-const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
+const EditOutgoingMailDialog: React.FC<EditOutgoingMailDialogProps> = ({
+  mail,
+  isOpen,
+  onClose,
+  onMailUpdated,
+}) => {
   const [formData, setFormData] = useState({
-    chronoNumber: "",
-    date: new Date(),
-    issueDate: undefined as Date | undefined,
-    medium: "" as MailMedium,
-    subject: "",
-    mailType: "" as MailType,
-    responseDate: undefined as Date | undefined,
-    senderName: "",
-    senderAddress: "",
-    recipientService: "",
-    observations: "",
+    chronoNumber: mail.chronoNumber,
+    date: mail.date,
+    issueDate: mail.issueDate,
+    medium: mail.medium,
+    subject: mail.subject,
+    correspondent: mail.correspondent,
+    address: mail.address,
+    service: mail.service,
+    writer: mail.writer,
+    observations: mail.observations || "",
+    status: mail.status,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -59,47 +73,32 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
       !formData.chronoNumber ||
       !formData.subject ||
       !formData.medium ||
-      !formData.mailType ||
-      !formData.senderName ||
-      !formData.recipientService
+      !formData.correspondent ||
+      !formData.service ||
+      !formData.writer
     ) {
       toast.error("Veuillez remplir tous les champs obligatoires.");
       return;
     }
 
-    const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const mailWithId = { ...formData, id: mailId };
-
-    saveIncomingMailToLocalStorage(mailWithId);
-    AuditLogger.logMailCreate('incoming', mailId, formData.chronoNumber);
-
-    if (onMailSaved) onMailSaved();
-
-    toast.success("Courrier entrant enregistré avec succès!");
-
-    setFormData({
-      chronoNumber: "",
-      date: new Date(),
-      issueDate: undefined,
-      medium: "" as MailMedium,
-      subject: "",
-      mailType: "" as MailType,
-      responseDate: undefined,
-      senderName: "",
-      senderAddress: "",
-      recipientService: "",
-      observations: "",
-    });
+    const success = updateOutgoingMailInLocalStorage(mail.id, formData);
+    
+    if (success) {
+      toast.success("Courrier modifié avec succès!");
+      onMailUpdated();
+      onClose();
+    } else {
+      toast.error("Erreur lors de la modification du courrier.");
+    }
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Enregistrer un Courrier Entrant</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Modifier le Courrier Sortant</DialogTitle>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Première ligne : Numéro Chrono et Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label className="form-label">
@@ -109,14 +108,13 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
                 name="chronoNumber"
                 value={formData.chronoNumber}
                 onChange={handleInputChange}
-                placeholder="Entrez le numéro chronologique"
                 required
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">
-                Date d'arrivée <span className="text-red-500">*</span>
+                Date d'enregistrement <span className="text-red-500">*</span>
               </label>
               <Popover>
                 <PopoverTrigger asChild>
@@ -145,7 +143,6 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
             </div>
           </div>
 
-          {/* Date d'émission */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label className="form-label">Date d'émission</label>
@@ -174,13 +171,10 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
                 </PopoverContent>
               </Popover>
             </div>
-          </div>
 
-          {/* Deuxième ligne : Moyen et Type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label className="form-label">
-                Moyen de réception <span className="text-red-500">*</span>
+                Support <span className="text-red-500">*</span>
               </label>
               <Select
                 value={formData.medium}
@@ -188,41 +182,18 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
                 required
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un moyen" />
+                  <SelectValue placeholder="Sélectionner le support" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Physical">Physique</SelectItem>
                   <SelectItem value="Email">Email</SelectItem>
+                  <SelectItem value="Physical">Physique</SelectItem>
                   <SelectItem value="Fax">Fax</SelectItem>
-                  <SelectItem value="Other">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">
-                Type de courrier <span className="text-red-500">*</span>
-              </label>
-              <Select
-                value={formData.mailType}
-                onValueChange={(val) => handleSelectChange("mailType", val)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Administrative">Administratif</SelectItem>
-                  <SelectItem value="Technical">Technique</SelectItem>
-                  <SelectItem value="Commercial">Commercial</SelectItem>
-                  <SelectItem value="Financial">Financier</SelectItem>
                   <SelectItem value="Other">Autre</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Troisième ligne : Objet */}
           <div className="form-group">
             <label className="form-label">
               Objet <span className="text-red-500">*</span>
@@ -231,121 +202,79 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
               name="subject"
               value={formData.subject}
               onChange={handleInputChange}
-              placeholder="Entrez l'objet du courrier"
               required
             />
           </div>
 
-          {/* Quatrième ligne : Expéditeur et Service */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-group">
               <label className="form-label">
-                Nom de l'expéditeur <span className="text-red-500">*</span>
+                Nom du Destinataire <span className="text-red-500">*</span>
               </label>
               <Input
-                name="senderName"
-                value={formData.senderName}
+                name="correspondent"
+                value={formData.correspondent}
                 onChange={handleInputChange}
-                placeholder="Entrez le nom de l'expéditeur"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Adresse du Destinataire</label>
+              <Input
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-group">
+              <label className="form-label">
+                Service Expéditeur <span className="text-red-500">*</span>
+              </label>
+              <Input
+                name="service"
+                value={formData.service}
+                onChange={handleInputChange}
                 required
               />
             </div>
 
             <div className="form-group">
               <label className="form-label">
-                Service destinataire <span className="text-red-500">*</span>
+                Rédacteur <span className="text-red-500">*</span>
               </label>
               <Input
-                name="recipientService"
-                value={formData.recipientService}
+                name="writer"
+                value={formData.writer}
                 onChange={handleInputChange}
-                placeholder="Entrez le service destinataire"
                 required
               />
             </div>
           </div>
 
-          {/* Cinquième ligne : Adresse expéditeur et Date de réponse */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="form-group">
-              <label className="form-label">Adresse de l'expéditeur</label>
-              <Input
-                name="senderAddress"
-                value={formData.senderAddress}
-                onChange={handleInputChange}
-                placeholder="Entrez l'adresse de l'expéditeur"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Date de réponse</label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.responseDate && "text-muted-foreground"
-                    )}
-                    type="button"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.responseDate ? format(formData.responseDate, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent align="start" className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.responseDate}
-                    onSelect={(date) => handleDateChange("responseDate", date)}
-                    initialFocus
-                    className="p-3 pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Observations */}
           <div className="form-group">
             <label className="form-label">Observations</label>
             <Textarea
               name="observations"
               value={formData.observations}
               onChange={handleInputChange}
-              placeholder="Entrez des observations éventuelles"
               rows={3}
             />
           </div>
 
-          <CardFooter className="flex justify-end space-x-2 px-0 pb-0">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() =>
-                setFormData({
-                  chronoNumber: "",
-                  date: new Date(),
-                  issueDate: undefined,
-                  medium: "" as MailMedium,
-                  subject: "",
-                  mailType: "" as MailType,
-                  responseDate: undefined,
-                  senderName: "",
-                  senderAddress: "",
-                  recipientService: "",
-                  observations: "",
-                })
-              }
-            >
-              Réinitialiser
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={onClose}>
+              Annuler
             </Button>
-            <Button type="submit">Enregistrer</Button>
-          </CardFooter>
+            <Button type="submit">Enregistrer les modifications</Button>
+          </DialogFooter>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default IncomingMailForm;
+export default EditOutgoingMailDialog;

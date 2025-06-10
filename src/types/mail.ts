@@ -10,6 +10,7 @@ export interface BaseMail {
   id: string;
   chronoNumber: string;
   date: Date;
+  issueDate?: Date; // Date d'émission de la correspondance
   medium: MailMedium;
   subject: string;
   observations?: string;

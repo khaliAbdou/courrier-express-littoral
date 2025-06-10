@@ -17,6 +17,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
   const [formData, setFormData] = useState({
     chronoNumber: "",
     date: new Date(),
+    issueDate: undefined as Date | undefined,
     medium: "" as MailMedium,
     subject: "",
     correspondent: "",
@@ -41,10 +42,15 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     }
   };
 
+  const handleIssueDateChange = (date: Date | undefined) => {
+    setFormData((prev) => ({ ...prev, issueDate: date }));
+  };
+
   const resetForm = () => {
     setFormData({
       chronoNumber: "",
       date: new Date(),
+      issueDate: undefined,
       medium: "" as MailMedium,
       subject: "",
       correspondent: "",
@@ -65,7 +71,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     }
 
     const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const mailWithId = { ...formData, id: mailId };
+    const mailWithId = { ...formData, id: mailId, status: "Processing" };
 
     saveOutgoingMailToLocalStorage(mailWithId);
     AuditLogger.logMailCreate('outgoing', mailId, formData.chronoNumber);
@@ -91,6 +97,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             onInputChange={handleInputChange}
             onSelectChange={handleSelectChange}
             onDateChange={handleDateChange}
+            onIssueDateChange={handleIssueDateChange}
           />
           <OutgoingMailFormActions onReset={resetForm} />
         </form>

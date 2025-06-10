@@ -11,6 +11,7 @@ import { FileText, User, Building } from "lucide-react";
 interface FormData {
   chronoNumber: string;
   date: Date;
+  issueDate?: Date;
   medium: MailMedium;
   subject: string;
   correspondent: string;
@@ -25,6 +26,7 @@ interface OutgoingMailFormFieldsProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onSelectChange: (name: string, value: string) => void;
   onDateChange: (date: Date | undefined) => void;
+  onIssueDateChange: (date: Date | undefined) => void;
 }
 
 const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
@@ -32,6 +34,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
   onInputChange,
   onSelectChange,
   onDateChange,
+  onIssueDateChange,
 }) => {
   const mediumOptions = [
     { value: "Email", label: "Email" },
@@ -57,13 +60,18 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             required
           />
           <FormDatePicker
-            label="Date"
+            label="Date d'enregistrement"
             date={formData.date}
             onDateChange={onDateChange}
             required
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormDatePicker
+            label="Date d'émission"
+            date={formData.issueDate}
+            onDateChange={onIssueDateChange}
+          />
           <FormSelect
             id="medium"
             label="Support"
@@ -73,15 +81,15 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             options={mediumOptions}
             required
           />
-          <FormInput
-            id="subject"
-            label="Objet"
-            value={formData.subject}
-            onChange={onInputChange}
-            placeholder="Entrez l'objet du courrier"
-            required
-          />
         </div>
+        <FormInput
+          id="subject"
+          label="Objet"
+          value={formData.subject}
+          onChange={onInputChange}
+          placeholder="Entrez l'objet du courrier"
+          required
+        />
       </FormSection>
 
       {/* Informations sur le destinataire */}
