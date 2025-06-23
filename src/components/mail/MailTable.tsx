@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { Mail, FileText, Edit } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import { BaseMail, IncomingMail, OutgoingMail } from "@/types/mail";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,8 +12,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import EditIncomingMailDialog from "./incoming/EditIncomingMailDialog";
 import EditOutgoingMailDialog from "./outgoing/EditOutgoingMailDialog";
+import { deleteIncomingMail } from "@/utils/incomingMailStorage";
+import { deleteOutgoingMail } from "@/utils/outgoingMailStorage";
+import { toast } from "sonner";
 
 interface MailTableProps {
   mails: (IncomingMail | OutgoingMail)[];
@@ -24,6 +38,7 @@ interface MailTableProps {
 const MailTable: React.FC<MailTableProps> = ({ mails, type, onMailUpdated }) => {
   const [editingMail, setEditingMail] = useState<IncomingMail | OutgoingMail | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deletingMailId, setDeletingMailId] = useState<string | null>(null);
 
   const handleEditClick = (mail: IncomingMail | OutgoingMail) => {
     setEditingMail(mail);
@@ -39,6 +54,28 @@ const MailTable: React.FC<MailTableProps> = ({ mails, type, onMailUpdated }) => 
     if (onMailUpdated) {
       onMailUpdated();
     }
+  };
+
+  const handleDeleteClick = async (mailId: string) => {
+    try {
+      let success = false;
+      if (type === "incoming") {
+        success = await deleteIncomingMail(mailId);
+      } else {
+        success = await deleteOutgoingMail(mailId);
+      }
+
+      if (success) {
+        toast.success("Courrier supprimé avec succès!");
+        handleMailUpdated();
+      } else {
+        toast.error("Erreur lors de la suppression du courrier.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      toast.error("Erreur lors de la suppression du courrier.");
+    }
+    setDeletingMailId(null);
   };
 
   return (
@@ -143,22 +180,35 @@ const MailTable: React.FC<MailTableProps> = ({ mails, type, onMailUpdated }) => 
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center"
-                          title="Voir le document"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="flex items-center"
-                          title="Détails"
-                        >
-                          <Mail className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Êtes-vous sûr de vouloir supprimer ce courrier ? Cette action est irréversible.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteClick(mail.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>

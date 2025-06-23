@@ -1,18 +1,18 @@
 
 import React from "react";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface FormDatePickerProps {
+export interface FormDatePickerProps {
   label: string;
-  date: Date | undefined;
-  onDateChange: (date: Date | undefined) => void;
+  date?: Date;
+  onDateChange: (date?: Date) => void;
   required?: boolean;
-  className?: string;
+  disabled?: boolean;
 }
 
 const FormDatePicker: React.FC<FormDatePickerProps> = ({
@@ -20,27 +20,29 @@ const FormDatePicker: React.FC<FormDatePickerProps> = ({
   date,
   onDateChange,
   required = false,
-  className = "",
+  disabled = false,
 }) => {
   return (
-    <div className={`form-group ${className}`}>
+    <div className="form-group">
       <label className="form-label">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <Popover>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
+            variant={"outline"}
             className={cn(
               "w-full justify-start text-left font-normal",
               !date && "text-muted-foreground"
             )}
+            type="button"
+            disabled={disabled}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date ? format(date, "dd/MM/yyyy") : <span>Sélectionnez une date</span>}
+            {date ? format(date, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent align="start" className="w-auto p-0">
           <Calendar
             mode="single"
             selected={date}

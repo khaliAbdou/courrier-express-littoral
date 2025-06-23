@@ -1,16 +1,18 @@
 
 import React from "react";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
-interface FormInputProps {
+export interface FormInputProps {
   id: string;
   label: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  placeholder?: string;
   required?: boolean;
-  type?: string;
-  className?: string;
+  type?: "text" | "email" | "tel" | "url";
+  rows?: number;
+  disabled?: boolean;
 }
 
 const FormInput: React.FC<FormInputProps> = ({
@@ -21,22 +23,35 @@ const FormInput: React.FC<FormInputProps> = ({
   placeholder,
   required = false,
   type = "text",
-  className = "",
+  rows,
+  disabled = false,
 }) => {
   return (
-    <div className={`form-group ${className}`}>
+    <div className="form-group">
       <label htmlFor={id} className="form-label">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      <Input
-        id={id}
-        name={id}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        required={required}
-      />
+      {rows ? (
+        <Textarea
+          id={id}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          rows={rows}
+          disabled={disabled}
+        />
+      ) : (
+        <Input
+          id={id}
+          type={type}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+        />
+      )}
     </div>
   );
 };

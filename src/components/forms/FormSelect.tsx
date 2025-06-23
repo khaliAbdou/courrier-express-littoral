@@ -8,15 +8,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-interface FormSelectProps {
+export interface FormSelectProps {
   id: string;
   label: string;
   value: string;
   onValueChange: (value: string) => void;
-  placeholder: string;
+  placeholder?: string;
   options: { value: string; label: string }[];
   required?: boolean;
-  className?: string;
+  disabled?: boolean;
 }
 
 const FormSelect: React.FC<FormSelectProps> = ({
@@ -27,15 +27,15 @@ const FormSelect: React.FC<FormSelectProps> = ({
   placeholder,
   options,
   required = false,
-  className = "",
+  disabled = false,
 }) => {
   return (
-    <div className={`form-group ${className}`}>
+    <div className="form-group">
       <label htmlFor={id} className="form-label">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger id={id}>
+      <Select value={value} onValueChange={onValueChange} required={required} disabled={disabled}>
+        <SelectTrigger>
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
