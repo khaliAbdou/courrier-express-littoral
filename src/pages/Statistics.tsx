@@ -10,34 +10,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStatisticsData } from "@/hooks/useStatisticsData";
 
 const StatisticsPage: React.FC = () => {
-  const { data, loading, chartData, performanceData } = useStatisticsData();
+  const { 
+    incomingMails, 
+    outgoingMails, 
+    monthlyStats, 
+    filteredStats,
+    years,
+    availableServices,
+    performanceMetrics,
+    isLoading 
+  } = useStatisticsData();
+  
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
-
-  // Extraction des services uniques depuis les données
-  const availableServices = React.useMemo(() => {
-    if (!data?.incomingMails) return [];
-    const services = new Set<string>();
-    data.incomingMails.forEach(mail => {
-      if (mail.recipientService) {
-        services.add(mail.recipientService);
-      }
-    });
-    return Array.from(services);
-  }, [data?.incomingMails]);
-
-  // Extraction des années uniques
-  const availableYears = React.useMemo(() => {
-    if (!data?.incomingMails) return [];
-    const years = new Set<number>();
-    data.incomingMails.forEach(mail => {
-      if (mail.date) {
-        years.add(new Date(mail.date).getFullYear());
-      }
-    });
-    return Array.from(years).sort((a, b) => b - a);
-  }, [data?.incomingMails]);
 
   // Mois disponibles
   const availableMonths = [
@@ -55,7 +41,7 @@ const StatisticsPage: React.FC = () => {
     setSelectedMonths(filters.months);
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
@@ -84,22 +70,18 @@ const StatisticsPage: React.FC = () => {
             <div className="grid gap-6">
               <AdvancedFilters
                 availableServices={availableServices}
-                availableYears={availableYears}
-                availableMonths={availableMonths}
+                availableYears={years}
                 onFilterChange={handleFilterChange}
               />
               <StatisticsOverview 
-                data={data} 
-                selectedServices={selectedServices}
-                selectedYears={selectedYears}
-                selectedMonths={selectedMonths}
+                filteredStats={filteredStats}
               />
             </div>
           </TabsContent>
 
           <TabsContent value="charts" className="mt-0">
             <EnhancedCharts 
-              chartData={chartData}
+              monthlyStats={monthlyStats}
               selectedServices={selectedServices}
               selectedYears={selectedYears}
               selectedMonths={selectedMonths}
@@ -108,7 +90,7 @@ const StatisticsPage: React.FC = () => {
 
           <TabsContent value="performance" className="mt-0">
             <PerformanceMetrics 
-              data={performanceData}
+              performanceMetrics={performanceMetrics}
               selectedServices={selectedServices}
               selectedYears={selectedYears}
               selectedMonths={selectedMonths}
@@ -117,7 +99,8 @@ const StatisticsPage: React.FC = () => {
 
           <TabsContent value="export" className="mt-0">
             <StatisticsExport 
-              data={data}
+              incomingMails={incomingMails}
+              outgoingMails={outgoingMails}
               selectedServices={selectedServices}
               selectedYears={selectedYears}
               selectedMonths={selectedMonths}

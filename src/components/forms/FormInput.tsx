@@ -34,6 +34,7 @@ const FormInput: React.FC<FormInputProps> = ({
       {rows ? (
         <Textarea
           id={id}
+          name={id}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
@@ -44,6 +45,7 @@ const FormInput: React.FC<FormInputProps> = ({
       ) : (
         <Input
           id={id}
+          name={id}
           type={type}
           value={value}
           onChange={onChange}
