@@ -8,17 +8,32 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-import { getAllOutgoingMails } from "@/utils/outgoingMailStorage";
+import {getAllOutgoingMails, migrateLocalStorageToIndexedDB, addOutgoingMail,} from "@/utils/outgoingMailStorage";
 
 const OutgoingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMails, setFilteredMails] = useState<OutgoingMail[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
 
-  useEffect(() => {
-    const mails = getAllOutgoingMails();
+useEffect(() => {
+  const init = async () => {
+    await migrateLocalStorageToIndexedDB();
+    const mails = await getAllOutgoingMails();
     setFilteredMails(mails);
-  }, [refresh]);
+  };
+  init();
+}, [refresh]);
+
+// ... et adapte la recherche, l'ajout, la suppression, etc, de la même façon que pour les incoming mails.useEffect(() => {
+  const init = async () => {
+    await migrateLocalStorageToIndexedDB();
+    const mails = await getAllOutcomingMails();
+    setFilteredMails(mails);
+  };
+  init();
+}, [refresh]);
+
+// ... et adapte la recherche, l'ajout, la suppression, etc, de la même façon que pour les incoming mails.
 
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
