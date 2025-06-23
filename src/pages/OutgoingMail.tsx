@@ -10,7 +10,7 @@ import { Search } from "lucide-react";
 import {
   getAllOutgoingMails,
   migrateLocalStorageToIndexedDB,
-} from "@/utils/outgoingMailDB"; // <--- le bon fichier utilitaire
+} from "@/utils/outgoingMailDB";
 
 const OutgoingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -30,15 +30,15 @@ const OutgoingMailPage: React.FC = () => {
     setRefresh((r) => r + 1);
   };
 
-  // Fonctions de recherche et de reset asynchrones
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     const allMails = await getAllOutgoingMails();
+    const lowerTerm = searchTerm.toLowerCase();
     const filtered = allMails.filter((mail) =>
-      (mail.chronoNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mail.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mail.senderName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mail.recipientService || "").toLowerCase().includes(searchTerm.toLowerCase())
+      (mail.chronoNumber || "").toLowerCase().includes(lowerTerm) ||
+      (mail.subject || "").toLowerCase().includes(lowerTerm) ||
+      (mail.senderName || "").toLowerCase().includes(lowerTerm) ||
+      (mail.recipientService || "").toLowerCase().includes(lowerTerm)
     );
     setFilteredMails(filtered);
   };
