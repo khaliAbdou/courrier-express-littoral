@@ -8,6 +8,7 @@ import StatisticsExport from "@/components/statistics/StatisticsExport";
 import AdvancedFilters from "@/components/statistics/AdvancedFilters";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStatisticsData } from "@/hooks/useStatisticsData";
+import { prepareBarChartData } from "@/utils/statisticsUtils";
 
 const StatisticsPage: React.FC = () => {
   const { 
@@ -38,6 +39,18 @@ const StatisticsPage: React.FC = () => {
     setSelectedYears(filterData.years);
     setSelectedMonths(filterData.months);
   };
+
+  // Prepare data for EnhancedCharts
+  const monthlyData = prepareBarChartData(monthlyStats);
+  const typeData = monthlyStats.map(stat => ({
+    name: `${stat.month} ${stat.year}`,
+    ...stat.byType
+  }));
+  const comparisonData = monthlyStats.map(stat => ({
+    name: `${stat.month} ${stat.year}`,
+    total: stat.incomingCount + stat.outgoingCount,
+    efficiency: stat.incomingCount > 0 ? Math.round((stat.outgoingCount / stat.incomingCount) * 100) : 0
+  }));
 
   if (isLoading) {
     return (
@@ -82,7 +95,9 @@ const StatisticsPage: React.FC = () => {
 
           <TabsContent value="charts" className="mt-0">
             <EnhancedCharts 
-              monthlyStats={monthlyStats}
+              monthlyData={monthlyData}
+              typeData={typeData}
+              comparisonData={comparisonData}
             />
           </TabsContent>
 
@@ -95,6 +110,7 @@ const StatisticsPage: React.FC = () => {
           <TabsContent value="export" className="mt-0">
             <StatisticsExport 
               data={{ incomingMails, outgoingMails }}
+              filters={filters}
             />
           </TabsContent>
         </Tabs>
