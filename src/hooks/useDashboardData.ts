@@ -2,30 +2,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { IncomingMail, OutgoingMail } from "@/types/mail";
-import { toast } from "@/components/ui/sonner";
-import React from "react";
-
-// Fonctions pour récupérer les courriers du localStorage
-function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-    responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-  }));
-}
-
-function getAllOutgoingMails(): OutgoingMail[] {
-  const key = "outgoingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-  }));
-}
+import { getAllIncomingMails } from "@/utils/incomingMailStorage";
+import { getAllOutgoingMails } from "@/utils/outgoingMailStorage";
 
 // Fonction pour récupérer les statistiques depuis Supabase
 const fetchMailStats = async () => {
@@ -55,7 +33,6 @@ const fetchOverdueMails = async (): Promise<IncomingMail[]> => {
       
     if (error) throw error;
     
-    // Transformation des données Supabase (snake_case) vers le format TypeScript (camelCase)
     return (data || []).map(item => ({
       id: item.id,
       chronoNumber: item.chrono_number,
@@ -70,6 +47,7 @@ const fetchOverdueMails = async (): Promise<IncomingMail[]> => {
       observations: item.observations,
       documentLink: item.document_link,
       status: item.status,
+      issueDate: item.issue_date ? new Date(item.issue_date) : undefined,
     }));
   } catch (error) {
     console.error("Erreur lors de la récupération des courriers en retard:", error);
@@ -87,30 +65,36 @@ export const useDashboardData = () => {
     queryKey: ["overdueMails"],
     queryFn: fetchOverdueMails,
   });
-  
-  // Récupération des vraies données du localStorage
-  const incomingMails = getAllIncomingMails();
-  const outgoingMails = getAllOutgoingMails();
-  
-  // Gestion des erreurs via React Error Boundary ou useEffect si nécessaire
-  React.useEffect(() => {
-    if (mailStats === null) {
-      toast.error("Erreur lors du chargement des statistiques");
-    }
-  }, [mailStats]);
-  
-  // Stats calculées basées sur les vraies données
+
+  const { data: incomingMails, isLoading: incomingLoading } = useQuery({
+    queryKey: ["incomingMails"],
+    queryFn: getAllIncomingMails,
+  });
+
+  const { data: outgoingMails, isLoading: outgoingLoading } = useQuery({
+    queryKey: ["outgoingMails"],
+    queryFn: getAllOutgoingMails,
+  });
+
   const stats = {
-    totalIncoming: incomingMails.length,
-    totalOutgoing: outgoingMails.length,
-    pending: incomingMails.filter(mail => mail.status === "Pending" || mail.status === "Processing").length,
-    processed: incomingMails.filter(mail => mail.status === "Completed").length,
+    totalIncoming: incomingMails?.length || 0,
+    totalOutgoing: outgoingMails?.length || 0,
+    pending: incomingMails?.filter(mail => mail.status === "Pending" || mail.status === "Processing").length || 0,
+    processed: incomingMails?.filter(mail => mail.status === "Completed").length || 0,
+    pendingIncoming: incomingMails?.filter(mail => mail.status === "Pending" || mail.status === "Processing").length || 0,
+    pendingOutgoing: outgoingMails?.filter(mail => mail.status === "Pending" || mail.status === "Processing").length || 0,
+    recentIncoming: incomingMails?.slice(0, 5) || [],
+    recentOutgoing: outgoingMails?.slice(0, 5) || [],
+    overdueMails: overdueMails || [],
   };
+
+  const isLoading = statsLoading || overdueLoading || incomingLoading || outgoingLoading;
 
   return {
     mailStats,
-    overdueMails: overdueMails || [],
     stats,
+    overdueMails: overdueMails || [],
+    isLoading,
     statsLoading,
     overdueLoading,
   };

@@ -13,11 +13,25 @@ import { getAllIncomingMails } from "@/utils/incomingMailStorage";
 const IncomingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMails, setFilteredMails] = useState<IncomingMail[]>([]);
+  const [allMails, setAllMails] = useState<IncomingMail[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const mails = getAllIncomingMails();
-    setFilteredMails(mails);
+    const loadMails = async () => {
+      setIsLoading(true);
+      try {
+        const mails = await getAllIncomingMails();
+        setAllMails(mails);
+        setFilteredMails(mails);
+      } catch (error) {
+        console.error("Erreur lors du chargement des courriers:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMails();
   }, [refresh]);
 
   const handleNewMail = () => {
@@ -26,7 +40,6 @@ const IncomingMailPage: React.FC = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const allMails = getAllIncomingMails();
     const filtered = allMails.filter((mail) =>
       (mail.chronoNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (mail.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -38,8 +51,19 @@ const IncomingMailPage: React.FC = () => {
 
   const resetSearch = () => {
     setSearchTerm("");
-    setFilteredMails(getAllIncomingMails());
+    setFilteredMails(allMails);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Navbar />
+        <div className="page-container flex-1 flex items-center justify-center">
+          <div>Chargement des courriers...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">

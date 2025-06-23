@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { format } from "date-fns";
 import { MailMedium, MailType } from "@/types/mail";
@@ -39,6 +40,8 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
     observations: "",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -52,7 +55,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
     setFormData((prev) => ({ ...prev, [name]: date }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (
@@ -67,29 +70,38 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
       return;
     }
 
-    const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const mailWithId = { ...formData, id: mailId };
+    setIsSubmitting(true);
 
-    saveIncomingMailToLocalStorage(mailWithId);
-    AuditLogger.logMailCreate('incoming', mailId, formData.chronoNumber);
+    try {
+      const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const mailWithId = { ...formData, id: mailId };
 
-    if (onMailSaved) onMailSaved();
+      await saveIncomingMailToLocalStorage(mailWithId);
+      AuditLogger.logMailCreate('incoming', mailId, formData.chronoNumber);
 
-    toast.success("Courrier entrant enregistré avec succès!");
+      if (onMailSaved) onMailSaved();
 
-    setFormData({
-      chronoNumber: "",
-      date: new Date(),
-      issueDate: undefined,
-      medium: "" as MailMedium,
-      subject: "",
-      mailType: "" as MailType,
-      responseDate: undefined,
-      senderName: "",
-      senderAddress: "",
-      recipientService: "",
-      observations: "",
-    });
+      toast.success("Courrier entrant enregistré avec succès!");
+
+      setFormData({
+        chronoNumber: "",
+        date: new Date(),
+        issueDate: undefined,
+        medium: "" as MailMedium,
+        subject: "",
+        mailType: "" as MailType,
+        responseDate: undefined,
+        senderName: "",
+        senderAddress: "",
+        recipientService: "",
+        observations: "",
+      });
+    } catch (error) {
+      toast.error("Erreur lors de l'enregistrement du courrier.");
+      console.error("Erreur:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -111,6 +123,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
                 onChange={handleInputChange}
                 placeholder="Entrez le numéro chronologique"
                 required
+                disabled={isSubmitting}
               />
             </div>
 
@@ -127,6 +140,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
                       !formData.date && "text-muted-foreground"
                     )}
                     type="button"
+                    disabled={isSubmitting}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.date ? format(formData.date, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
@@ -158,6 +172,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
                       !formData.issueDate && "text-muted-foreground"
                     )}
                     type="button"
+                    disabled={isSubmitting}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.issueDate ? format(formData.issueDate, "dd/MM/yyyy") : <span>Sélectionner une date</span>}
@@ -322,6 +337,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
             <Button
               variant="outline"
               type="button"
+              disabled={isSubmitting}
               onClick={() =>
                 setFormData({
                   chronoNumber: "",
@@ -340,7 +356,9 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
             >
               Réinitialiser
             </Button>
-            <Button type="submit">Enregistrer</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+            </Button>
           </CardFooter>
         </form>
       </CardContent>

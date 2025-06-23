@@ -27,6 +27,8 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     observations: "",
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -61,7 +63,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.chronoNumber || !formData.subject || !formData.medium || 
@@ -70,16 +72,25 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
       return;
     }
 
-    const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const mailWithId = { ...formData, id: mailId, status: "Processing" };
+    setIsSubmitting(true);
 
-    saveOutgoingMailToLocalStorage(mailWithId);
-    AuditLogger.logMailCreate('outgoing', mailId, formData.chronoNumber);
+    try {
+      const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      const mailWithId = { ...formData, id: mailId, status: "Processing" };
 
-    if (onMailSaved) onMailSaved();
+      await saveOutgoingMailToLocalStorage(mailWithId);
+      AuditLogger.logMailCreate('outgoing', mailId, formData.chronoNumber);
 
-    toast.success("Courrier départ enregistré avec succès!");
-    resetForm();
+      if (onMailSaved) onMailSaved();
+
+      toast.success("Courrier départ enregistré avec succès!");
+      resetForm();
+    } catch (error) {
+      toast.error("Erreur lors de l'enregistrement du courrier.");
+      console.error("Erreur:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -98,8 +109,12 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             onSelectChange={handleSelectChange}
             onDateChange={handleDateChange}
             onIssueDateChange={handleIssueDateChange}
+            disabled={isSubmitting}
           />
-          <OutgoingMailFormActions onReset={resetForm} />
+          <OutgoingMailFormActions 
+            onReset={resetForm} 
+            isSubmitting={isSubmitting}
+          />
         </form>
       </CardContent>
     </Card>
