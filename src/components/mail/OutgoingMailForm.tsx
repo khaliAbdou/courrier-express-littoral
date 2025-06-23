@@ -4,7 +4,7 @@ import { MailMedium } from "@/types/mail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { AuditLogger } from '@/utils/auditLogger';
-import { saveOutgoingMailToLocalStorage } from "@/utils/outgoingMailStorage";
+import { addOutgoingMail } from "@/utils/outgoingMailDB";
 import OutgoingMailFormFields from "./outgoing/OutgoingMailFormFields";
 import OutgoingMailFormActions from "./outgoing/OutgoingMailFormActions";
 import { Send } from "lucide-react";
@@ -61,7 +61,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.chronoNumber || !formData.subject || !formData.medium || 
@@ -70,16 +70,23 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
       return;
     }
 
-    const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    const mailWithId = { ...formData, id: mailId, status: "Processing" };
+    try {
+      const mailToSave = { 
+        ...formData, 
+        status: "Processing" as const
+      };
 
-    saveOutgoingMailToLocalStorage(mailWithId);
-    AuditLogger.logMailCreate('outgoing', mailId, formData.chronoNumber);
+      const mailId = await addOutgoingMail(mailToSave);
+      AuditLogger.logMailCreate('outgoing', mailId.toString(), formData.chronoNumber);
 
-    if (onMailSaved) onMailSaved();
+      if (onMailSaved) onMailSaved();
 
-    toast.success("Courrier départ enregistré avec succès!");
-    resetForm();
+      toast.success("Courrier départ enregistré avec succès!");
+      resetForm();
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement:", error);
+      toast.error("Erreur lors de l'enregistrement du courrier.");
+    }
   };
 
   return (

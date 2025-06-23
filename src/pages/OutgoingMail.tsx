@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import OutgoingMailForm from "@/components/mail/OutgoingMailForm";
@@ -19,9 +20,13 @@ const OutgoingMailPage: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      await migrateLocalStorageToIndexedDB();
-      const mails = await getAllOutgoingMails();
-      setFilteredMails(mails);
+      try {
+        await migrateLocalStorageToIndexedDB();
+        const mails = await getAllOutgoingMails();
+        setFilteredMails(mails);
+      } catch (error) {
+        console.error("Erreur lors du chargement des courriers:", error);
+      }
     };
     init();
   }, [refresh]);
@@ -32,20 +37,28 @@ const OutgoingMailPage: React.FC = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const allMails = await getAllOutgoingMails();
-    const lowerTerm = searchTerm.toLowerCase();
-    const filtered = allMails.filter((mail) =>
-      (mail.chronoNumber || "").toLowerCase().includes(lowerTerm) ||
-      (mail.subject || "").toLowerCase().includes(lowerTerm) ||
-      (mail.senderName || "").toLowerCase().includes(lowerTerm) ||
-      (mail.recipientService || "").toLowerCase().includes(lowerTerm)
-    );
-    setFilteredMails(filtered);
+    try {
+      const allMails = await getAllOutgoingMails();
+      const lowerTerm = searchTerm.toLowerCase();
+      const filtered = allMails.filter((mail) =>
+        (mail.chronoNumber || "").toLowerCase().includes(lowerTerm) ||
+        (mail.subject || "").toLowerCase().includes(lowerTerm) ||
+        (mail.correspondent || "").toLowerCase().includes(lowerTerm) ||
+        (mail.service || "").toLowerCase().includes(lowerTerm)
+      );
+      setFilteredMails(filtered);
+    } catch (error) {
+      console.error("Erreur lors de la recherche:", error);
+    }
   };
 
   const resetSearch = async () => {
     setSearchTerm("");
-    setFilteredMails(await getAllOutgoingMails());
+    try {
+      setFilteredMails(await getAllOutgoingMails());
+    } catch (error) {
+      console.error("Erreur lors de la réinitialisation:", error);
+    }
   };
 
   return (
