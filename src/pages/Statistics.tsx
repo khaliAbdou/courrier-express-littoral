@@ -21,6 +21,7 @@ const StatisticsPage: React.FC = () => {
     performanceMetrics,
     handleApplyFilters,
     handleResetFilters,
+    isLoading,
   } = useStatisticsData();
 
   // Données pour les graphiques
@@ -38,6 +39,20 @@ const StatisticsPage: React.FC = () => {
       typeData: [], // À implémenter selon les besoins
     };
   }, [filteredStats]);
+
+  // Fix the type issue by ensuring years is properly typed
+  const yearOptions: string[] = years.map(year => year.toString());
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Navbar />
+        <div className="page-container flex-1 flex items-center justify-center">
+          <div>Chargement des statistiques...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -60,7 +75,7 @@ const StatisticsPage: React.FC = () => {
               onFiltersChange={setFilters}
               onApply={handleApplyFilters}
               onReset={handleResetFilters}
-              availableYears={years}
+              availableYears={yearOptions}
               availableServices={availableServices}
             />
 

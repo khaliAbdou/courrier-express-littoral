@@ -1,13 +1,34 @@
 
-import { useState, useMemo } from "react";
-import { IncomingMail } from "@/types/mail";
+import { useState, useMemo, useEffect } from "react";
+import { IncomingMail, OutgoingMail } from "@/types/mail";
 import { getAllIncomingMails } from "@/utils/incomingMailStorage";
 import { getAllOutgoingMails } from "@/utils/outgoingMailStorage";
 import { computeMonthlyStats } from "@/utils/statisticsUtils";
 
 export function useStatisticsData() {
-  const incomingMails = getAllIncomingMails();
-  const outgoingMails = getAllOutgoingMails();
+  const [incomingMails, setIncomingMails] = useState<IncomingMail[]>([]);
+  const [outgoingMails, setOutgoingMails] = useState<OutgoingMail[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [incoming, outgoing] = await Promise.all([
+          getAllIncomingMails(),
+          getAllOutgoingMails()
+        ]);
+        setIncomingMails(incoming);
+        setOutgoingMails(outgoing);
+      } catch (error) {
+        console.error("Erreur lors du chargement des données:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
   const monthlyStats = useMemo(() => computeMonthlyStats(incomingMails, outgoingMails), [incomingMails, outgoingMails]);
 
   // États pour les filtres avancés
@@ -133,5 +154,6 @@ export function useStatisticsData() {
     performanceMetrics,
     handleApplyFilters,
     handleResetFilters,
+    isLoading,
   };
 }

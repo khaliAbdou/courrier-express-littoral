@@ -47,7 +47,6 @@ const fetchOverdueMails = async (): Promise<IncomingMail[]> => {
       observations: item.observations,
       documentLink: item.document_link,
       status: item.status,
-      issueDate: item.issue_date ? new Date(item.issue_date) : undefined,
     }));
   } catch (error) {
     console.error("Erreur lors de la récupération des courriers en retard:", error);

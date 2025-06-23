@@ -27,6 +27,7 @@ interface OutgoingMailFormFieldsProps {
   onSelectChange: (name: string, value: string) => void;
   onDateChange: (date: Date | undefined) => void;
   onIssueDateChange: (date: Date | undefined) => void;
+  disabled?: boolean;
 }
 
 const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
@@ -35,6 +36,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
   onSelectChange,
   onDateChange,
   onIssueDateChange,
+  disabled = false,
 }) => {
   const mediumOptions = [
     { value: "Email", label: "Email" },
@@ -58,12 +60,14 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             onChange={onInputChange}
             placeholder="Entrez le numéro chronologique"
             required
+            disabled={disabled}
           />
           <FormDatePicker
             label="Date d'enregistrement"
             date={formData.date}
             onDateChange={onDateChange}
             required
+            disabled={disabled}
           />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -71,6 +75,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             label="Date d'émission"
             date={formData.issueDate}
             onDateChange={onIssueDateChange}
+            disabled={disabled}
           />
           <FormSelect
             id="medium"
@@ -80,6 +85,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             placeholder="Sélectionnez le support"
             options={mediumOptions}
             required
+            disabled={disabled}
           />
         </div>
         <FormInput
@@ -89,6 +95,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
           onChange={onInputChange}
           placeholder="Entrez l'objet du courrier"
           required
+          disabled={disabled}
         />
       </FormSection>
 
@@ -106,6 +113,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             onChange={onInputChange}
             placeholder="Entrez le nom du destinataire"
             required
+            disabled={disabled}
           />
           <FormInput
             id="address"
@@ -113,6 +121,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             value={formData.address}
             onChange={onInputChange}
             placeholder="Entrez l'adresse complète"
+            disabled={disabled}
           />
         </div>
       </FormSection>
@@ -131,6 +140,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             onChange={onInputChange}
             placeholder="Entrez le service expéditeur"
             required
+            disabled={disabled}
           />
           <FormInput
             id="writer"
@@ -139,6 +149,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             onChange={onInputChange}
             placeholder="Entrez le nom du rédacteur"
             required
+            disabled={disabled}
           />
         </div>
       </FormSection>
@@ -156,6 +167,7 @@ const OutgoingMailFormFields: React.FC<OutgoingMailFormFieldsProps> = ({
             onChange={onInputChange}
             placeholder="Entrez des observations éventuelles"
             rows={3}
+            disabled={disabled}
           />
         </div>
       </FormSection>

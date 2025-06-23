@@ -7,28 +7,7 @@ export const monthNames = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-// Fonctions utilitaires pour lire les courriers du localStorage
-export function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-  }));
-}
-
-export function getAllOutgoingMails(): OutgoingMail[] {
-  const key = "outgoingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  return JSON.parse(existing).map((mail: any) => ({
-    ...mail,
-    date: mail.date ? new Date(mail.date) : undefined,
-  }));
-}
-
-// Préparer les statistiques mensuelles et annuelles à partir des courriers stockés
+// Préparer les statistiques mensuelles et annuelles à partir des courriers
 export function computeMonthlyStats(incomings: IncomingMail[], outgoings: OutgoingMail[]): MailStats[] {
   // Objet : { [year-month]: { ... } }
   const statsMap: { [key: string]: MailStats } = {};
