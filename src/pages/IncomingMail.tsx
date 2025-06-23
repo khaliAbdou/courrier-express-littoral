@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import IncomingMailForm from "@/components/mail/IncomingMailForm";
@@ -9,27 +8,28 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import { getAllIncomingMails, migrateLocalStorageToIndexedDB } from "@/utils/incomingMailStorage";
+
 const IncomingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMails, setFilteredMails] = useState<IncomingMail[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
 
-useEffect(() => {
-  const init = async () => {
-    await migrateLocalStorageToIndexedDB();
-    const mails = await getAllIncomingMails();
-    setFilteredMails(mails);
-  };
-  init();
-}, [refresh]);
+  useEffect(() => {
+    const init = async () => {
+      await migrateLocalStorageToIndexedDB();
+      const mails = await getAllIncomingMails();
+      setFilteredMails(mails);
+    };
+    init();
+  }, [refresh]);
 
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const allMails = getAllIncomingMails();
+    const allMails = await getAllIncomingMails();
     const filtered = allMails.filter((mail) =>
       (mail.chronoNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (mail.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -39,9 +39,10 @@ useEffect(() => {
     setFilteredMails(filtered);
   };
 
-  const resetSearch = () => {
+  const resetSearch = async () => {
     setSearchTerm("");
-    setFilteredMails(getAllIncomingMails());
+    const mails = await getAllIncomingMails();
+    setFilteredMails(mails);
   };
 
   return (
