@@ -25,12 +25,6 @@ const StatisticsPage: React.FC = () => {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
 
-  // Mois disponibles
-  const availableMonths = [
-    "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-    "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
-  ];
-
   const handleFilterChange = (filters: {
     services: string[];
     years: number[];
@@ -71,7 +65,7 @@ const StatisticsPage: React.FC = () => {
               <AdvancedFilters
                 availableServices={availableServices}
                 availableYears={years}
-                onFilterChange={handleFilterChange}
+                onFiltersChange={handleFilterChange}
               />
               <StatisticsOverview 
                 filteredStats={filteredStats}
@@ -81,7 +75,7 @@ const StatisticsPage: React.FC = () => {
 
           <TabsContent value="charts" className="mt-0">
             <EnhancedCharts 
-              monthlyStats={monthlyStats}
+              data={monthlyStats}
               selectedServices={selectedServices}
               selectedYears={selectedYears}
               selectedMonths={selectedMonths}
@@ -90,7 +84,7 @@ const StatisticsPage: React.FC = () => {
 
           <TabsContent value="performance" className="mt-0">
             <PerformanceMetrics 
-              performanceMetrics={performanceMetrics}
+              metrics={performanceMetrics}
               selectedServices={selectedServices}
               selectedYears={selectedYears}
               selectedMonths={selectedMonths}
@@ -99,8 +93,7 @@ const StatisticsPage: React.FC = () => {
 
           <TabsContent value="export" className="mt-0">
             <StatisticsExport 
-              incomingMails={incomingMails}
-              outgoingMails={outgoingMails}
+              data={{ incomingMails, outgoingMails }}
               selectedServices={selectedServices}
               selectedYears={selectedYears}
               selectedMonths={selectedMonths}

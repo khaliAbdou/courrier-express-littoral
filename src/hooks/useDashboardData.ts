@@ -1,53 +1,25 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { IncomingMail, OutgoingMail } from "@/types/mail";
 import { getAllIncomingMails } from "@/utils/incomingMailStorage";
 import { getAllOutgoingMails } from "@/utils/outgoingMailStorage";
+import { differenceInDays } from "date-fns";
 
-// Fonction pour récupérer les statistiques depuis Supabase
-const fetchMailStats = async () => {
+// Fonction pour récupérer les courriers en retard depuis les données locales
+const fetchOverdueMailsFromLocal = async (): Promise<IncomingMail[]> => {
   try {
-    const { data, error } = await supabase
-      .from("mail_statistics")
-      .select("*")
-      .order("year", { ascending: false })
-      .order("month", { ascending: false })
-      .limit(6);
-      
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("Erreur lors de la récupération des statistiques:", error);
-    return null;
-  }
-};
-
-// Fonction pour récupérer les courriers en retard
-const fetchOverdueMails = async (): Promise<IncomingMail[]> => {
-  try {
-    const { data, error } = await supabase
-      .from("overdue_mail_view")
-      .select("*")
-      .order("date", { ascending: false });
-      
-    if (error) throw error;
+    const mails = await getAllIncomingMails();
+    const now = new Date();
     
-    return (data || []).map(item => ({
-      id: item.id,
-      chronoNumber: item.chrono_number,
-      date: new Date(item.date),
-      medium: item.medium,
-      subject: item.subject,
-      mailType: item.mail_type,
-      responseDate: item.response_date ? new Date(item.response_date) : undefined,
-      senderName: item.sender_name,
-      senderAddress: item.sender_address,
-      recipientService: item.recipient_service,
-      observations: item.observations,
-      documentLink: item.document_link,
-      status: item.status,
-    }));
+    const overdue = mails.filter(mail => {
+      if (mail.status === 'Completed' || mail.status === 'Overdue') return false;
+      if (!mail.date) return false;
+      
+      const daysSinceReceived = differenceInDays(now, mail.date);
+      return daysSinceReceived > 7; // Considéré en retard après 7 jours
+    });
+    
+    return overdue;
   } catch (error) {
     console.error("Erreur lors de la récupération des courriers en retard:", error);
     return [];
@@ -55,14 +27,9 @@ const fetchOverdueMails = async (): Promise<IncomingMail[]> => {
 };
 
 export const useDashboardData = () => {
-  const { data: mailStats, isLoading: statsLoading } = useQuery({
-    queryKey: ["mailStats"],
-    queryFn: fetchMailStats,
-  });
-  
   const { data: overdueMails, isLoading: overdueLoading } = useQuery({
     queryKey: ["overdueMails"],
-    queryFn: fetchOverdueMails,
+    queryFn: fetchOverdueMailsFromLocal,
   });
 
   const { data: incomingMails, isLoading: incomingLoading } = useQuery({
@@ -87,14 +54,12 @@ export const useDashboardData = () => {
     overdueMails: overdueMails || [],
   };
 
-  const isLoading = statsLoading || overdueLoading || incomingLoading || outgoingLoading;
+  const isLoading = overdueLoading || incomingLoading || outgoingLoading;
 
   return {
-    mailStats,
     stats,
     overdueMails: overdueMails || [],
     isLoading,
-    statsLoading,
     overdueLoading,
   };
 };

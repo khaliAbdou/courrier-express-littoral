@@ -7,49 +7,57 @@ import { AlertTriangle, Bell, X } from 'lucide-react';
 import { IncomingMail } from '@/types/mail';
 import { format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
-
-function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  try {
-    return JSON.parse(existing).map((mail: any) => ({
-      ...mail,
-      date: mail.date ? new Date(mail.date) : undefined,
-      responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-    }));
-  } catch {
-    return [];
-  }
-}
+import { getAllIncomingMails } from '@/utils/incomingMailStorage';
 
 const OverdueAlerts: React.FC = () => {
   const [overdueMails, setOverdueMails] = useState<IncomingMail[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const mails = getAllIncomingMails();
-    const now = new Date();
-    
-    const overdue = mails.filter(mail => {
-      if (mail.status === 'Completed' || mail.status === 'Overdue') return false;
-      if (!mail.date) return false;
-      
-      const daysSinceReceived = differenceInDays(now, mail.date);
-      return daysSinceReceived > 7; // Considéré en retard après 7 jours
-    });
-    
-    const filteredOverdue = overdue.filter(mail => 
-      !dismissedAlerts.includes(mail.id || '')
-    );
-    
-    setOverdueMails(filteredOverdue);
+    const loadOverdueMails = async () => {
+      try {
+        const mails = await getAllIncomingMails();
+        const now = new Date();
+        
+        const overdue = mails.filter(mail => {
+          if (mail.status === 'Completed' || mail.status === 'Overdue') return false;
+          if (!mail.date) return false;
+          
+          const daysSinceReceived = differenceInDays(now, mail.date);
+          return daysSinceReceived > 7; // Considéré en retard après 7 jours
+        });
+        
+        const filteredOverdue = overdue.filter(mail => 
+          !dismissedAlerts.includes(mail.id || '')
+        );
+        
+        setOverdueMails(filteredOverdue);
+      } catch (error) {
+        console.error("Erreur lors du chargement des courriers en retard:", error);
+        setOverdueMails([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOverdueMails();
   }, [dismissedAlerts]);
 
   const dismissAlert = (mailId: string) => {
     setDismissedAlerts(prev => [...prev, mailId]);
     toast.success('Alerte masquée');
   };
+
+  if (isLoading) {
+    return (
+      <Card className="border-gray-200 bg-gray-50">
+        <CardContent className="p-6 text-center">
+          <div>Vérification des courriers en retard...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (overdueMails.length === 0) {
     return null;
