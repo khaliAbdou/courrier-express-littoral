@@ -8,17 +8,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-import { getAllIncomingMails } from "@/utils/incomingMailStorage";
-
+import { getAllIncomingMails, migrateLocalStorageToIndexedDB } from "@/utils/incomingMailStorage";
 const IncomingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMails, setFilteredMails] = useState<IncomingMail[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
 
-  useEffect(() => {
-    const mails = getAllIncomingMails();
+useEffect(() => {
+  const init = async () => {
+    await migrateLocalStorageToIndexedDB();
+    const mails = await getAllIncomingMails();
     setFilteredMails(mails);
-  }, [refresh]);
+  };
+  init();
+}, [refresh]);
 
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
