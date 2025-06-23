@@ -1,41 +1,25 @@
-
+// src/utils/incomingMailDB.ts
 import { IncomingMail } from "@/types/mail";
 
-export function saveIncomingMailToLocalStorage(mail: any) {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  const mails = existing ? JSON.parse(existing) : [];
-  mails.push({ ...mail, status: "Processing" });
-  localStorage.setItem(key, JSON.stringify(mails));
-}
+// ... openDB, getAllIncomingMails, addIncomingMail etc.
 
-export function updateIncomingMailInLocalStorage(mailId: string, updatedMail: any) {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return false;
-  
-  const mails = JSON.parse(existing);
-  const mailIndex = mails.findIndex((mail: any) => mail.id === mailId);
-  
-  if (mailIndex === -1) return false;
-  
-  mails[mailIndex] = { ...mails[mailIndex], ...updatedMail };
-  localStorage.setItem(key, JSON.stringify(mails));
-  return true;
-}
+export async function migrateLocalStorageToIndexedDB() {
+  // Vérifie si IndexedDB est déjà peuplé
+  const db = await openDB();
+  const existing = await getAllIncomingMails();
+  if (existing.length > 0) return; // Déjà migré
 
-export function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  try {
-    return JSON.parse(existing).map((mail: any) => ({
-      ...mail,
-      date: mail.date ? new Date(mail.date) : undefined,
-      issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
-      responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-    }));
-  } catch {
-    return [];
-  }
+  // Récupère les données du localStorage
+  const raw = localStorage.getItem("incomingMails");
+  if (!raw) return;
+  const mails: IncomingMail[] = JSON.parse(raw);
+
+  // Ajoute-les dans IndexedDB
+  await Promise.all(mails.map(async (mail) => {
+    // Enlève l'id s'il existe, il sera auto-incrémenté
+    const { id, ...rest } = mail as any;
+    await addIncomingMail(rest);
+  }));
+  // Optionnel : tu peux vider le localStorage
+  // localStorage.removeItem("incomingMails");
 }
