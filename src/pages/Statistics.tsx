@@ -18,6 +18,10 @@ const StatisticsPage: React.FC = () => {
     years,
     availableServices,
     performanceMetrics,
+    filters,
+    setFilters,
+    handleApplyFilters,
+    handleResetFilters,
     isLoading 
   } = useStatisticsData();
   
@@ -25,14 +29,14 @@ const StatisticsPage: React.FC = () => {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
   const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
 
-  const handleFilterChange = (filters: {
+  const handleFilterChange = (filterData: {
     services: string[];
     years: number[];
     months: string[];
   }) => {
-    setSelectedServices(filters.services);
-    setSelectedYears(filters.years);
-    setSelectedMonths(filters.months);
+    setSelectedServices(filterData.services);
+    setSelectedYears(filterData.years);
+    setSelectedMonths(filterData.months);
   };
 
   if (isLoading) {
@@ -65,7 +69,10 @@ const StatisticsPage: React.FC = () => {
               <AdvancedFilters
                 availableServices={availableServices}
                 availableYears={years}
+                filters={filters}
                 onFiltersChange={handleFilterChange}
+                onApply={handleApplyFilters}
+                onReset={handleResetFilters}
               />
               <StatisticsOverview 
                 filteredStats={filteredStats}
@@ -75,28 +82,19 @@ const StatisticsPage: React.FC = () => {
 
           <TabsContent value="charts" className="mt-0">
             <EnhancedCharts 
-              data={monthlyStats}
-              selectedServices={selectedServices}
-              selectedYears={selectedYears}
-              selectedMonths={selectedMonths}
+              monthlyStats={monthlyStats}
             />
           </TabsContent>
 
           <TabsContent value="performance" className="mt-0">
             <PerformanceMetrics 
               metrics={performanceMetrics}
-              selectedServices={selectedServices}
-              selectedYears={selectedYears}
-              selectedMonths={selectedMonths}
             />
           </TabsContent>
 
           <TabsContent value="export" className="mt-0">
             <StatisticsExport 
               data={{ incomingMails, outgoingMails }}
-              selectedServices={selectedServices}
-              selectedYears={selectedYears}
-              selectedMonths={selectedMonths}
             />
           </TabsContent>
         </Tabs>
