@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import OutgoingMailForm from "@/components/mail/OutgoingMailForm";
@@ -8,52 +7,45 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-import {getAllOutgoingMails, migrateLocalStorageToIndexedDB, addOutgoingMail,} from "@/utils/outgoingMailStorage";
+import {
+  getAllOutgoingMails,
+  migrateLocalStorageToIndexedDB,
+} from "@/utils/outgoingMailDB"; // <--- le bon fichier utilitaire
 
 const OutgoingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredMails, setFilteredMails] = useState<OutgoingMail[]>([]);
   const [refresh, setRefresh] = useState<number>(0);
 
-useEffect(() => {
-  const init = async () => {
-    await migrateLocalStorageToIndexedDB();
-    const mails = await getAllOutgoingMails();
-    setFilteredMails(mails);
-  };
-  init();
-}, [refresh]);
-
-// ... et adapte la recherche, l'ajout, la suppression, etc, de la même façon que pour les incoming mails.useEffect(() => {
-  const init = async () => {
-    await migrateLocalStorageToIndexedDB();
-    const mails = await getAllOutcomingMails();
-    setFilteredMails(mails);
-  };
-  init();
-}, [refresh]);
-
-// ... et adapte la recherche, l'ajout, la suppression, etc, de la même façon que pour les incoming mails.
+  useEffect(() => {
+    const init = async () => {
+      await migrateLocalStorageToIndexedDB();
+      const mails = await getAllOutgoingMails();
+      setFilteredMails(mails);
+    };
+    init();
+  }, [refresh]);
 
   const handleNewMail = () => {
     setRefresh((r) => r + 1);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  // Fonctions de recherche et de reset asynchrones
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const allMails = getAllOutgoingMails();
+    const allMails = await getAllOutgoingMails();
     const filtered = allMails.filter((mail) =>
-      mail.chronoNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.subject?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.correspondent?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      mail.service?.toLowerCase().includes(searchTerm.toLowerCase())
+      (mail.chronoNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (mail.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (mail.senderName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (mail.recipientService || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredMails(filtered);
   };
 
-  const resetSearch = () => {
+  const resetSearch = async () => {
     setSearchTerm("");
-    setFilteredMails(getAllOutgoingMails());
+    setFilteredMails(await getAllOutgoingMails());
   };
 
   return (
@@ -74,7 +66,7 @@ useEffect(() => {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                     <Input
                       type="search"
-                      placeholder="Rechercher par numéro, objet, correspondant..."
+                      placeholder="Rechercher par numéro, objet, expéditeur, service..."
                       className="w-full pl-8"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
