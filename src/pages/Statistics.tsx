@@ -1,4 +1,3 @@
-
 import React, { useMemo } from "react";
 import Navbar from "@/components/layout/Navbar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,16 +11,16 @@ import { prepareBarChartData } from "@/utils/statisticsUtils";
 
 const StatisticsPage: React.FC = () => {
   const {
-    filteredStats,
-    filters,
-    setFilters,
-    appliedFilters,
-    years,
-    availableServices,
-    performanceMetrics,
-    handleApplyFilters,
-    handleResetFilters,
-  } = useStatisticsData();
+    filteredStats = [],
+    filters = {},
+    setFilters = () => {},
+    appliedFilters = {},
+    years = [],
+    availableServices = [],
+    performanceMetrics = [],
+    handleApplyFilters = () => {},
+    handleResetFilters = () => {},
+  } = useStatisticsData() ?? {};
 
   // Données pour les graphiques
   const chartData = useMemo(() => {
