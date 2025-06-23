@@ -7,10 +7,10 @@ export type MailStatus = 'Pending' | 'Processing' | 'Completed' | 'Overdue';
 
 // Base mail interface with common properties
 export interface BaseMail {
-  id?: string;
+  id?: number;
   chronoNumber: string;
   date: Date;
-  issueDate?: Date; // Date d'émission de la correspondance
+  issueDate?: Date;
   medium: MailMedium;
   subject: string;
   observations?: string;

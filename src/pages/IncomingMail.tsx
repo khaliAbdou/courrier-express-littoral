@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import IncomingMailForm from "@/components/mail/IncomingMailForm";
@@ -7,7 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-import { getAllIncomingMails, migrateLocalStorageToIndexedDB } from "@/utils/incomingMailStorage";
+import {
+  getAllIncomingMails,
+  migrateIncomingMailsToIndexedDB,
+} from "@/utils/incomingMailDB";
 
 const IncomingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -16,9 +20,13 @@ const IncomingMailPage: React.FC = () => {
 
   useEffect(() => {
     const init = async () => {
-      await migrateLocalStorageToIndexedDB();
-      const mails = await getAllIncomingMails();
-      setFilteredMails(mails);
+      try {
+        await migrateIncomingMailsToIndexedDB();
+        const mails = await getAllIncomingMails();
+        setFilteredMails(mails);
+      } catch (error) {
+        console.error("Erreur lors du chargement des courriers:", error);
+      }
     };
     init();
   }, [refresh]);
@@ -29,20 +37,28 @@ const IncomingMailPage: React.FC = () => {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const allMails = await getAllIncomingMails();
-    const filtered = allMails.filter((mail) =>
-      (mail.chronoNumber || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mail.subject || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mail.senderName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (mail.recipientService || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredMails(filtered);
+    try {
+      const allMails = await getAllIncomingMails();
+      const lowerTerm = searchTerm.toLowerCase();
+      const filtered = allMails.filter((mail) =>
+        (mail.chronoNumber || "").toLowerCase().includes(lowerTerm) ||
+        (mail.subject || "").toLowerCase().includes(lowerTerm) ||
+        (mail.senderName || "").toLowerCase().includes(lowerTerm) ||
+        (mail.recipientService || "").toLowerCase().includes(lowerTerm)
+      );
+      setFilteredMails(filtered);
+    } catch (error) {
+      console.error("Erreur lors de la recherche:", error);
+    }
   };
 
   const resetSearch = async () => {
     setSearchTerm("");
-    const mails = await getAllIncomingMails();
-    setFilteredMails(mails);
+    try {
+      setFilteredMails(await getAllIncomingMails());
+    } catch (error) {
+      console.error("Erreur lors de la réinitialisation:", error);
+    }
   };
 
   return (
@@ -63,7 +79,7 @@ const IncomingMailPage: React.FC = () => {
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                     <Input
                       type="search"
-                      placeholder="Rechercher par numéro, objet, expéditeur..."
+                      placeholder="Rechercher par numéro, objet, expéditeur, service..."
                       className="w-full pl-8"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}

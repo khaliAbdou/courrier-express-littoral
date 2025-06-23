@@ -1,25 +1,28 @@
-// src/utils/incomingMailDB.ts
+
 import { IncomingMail } from "@/types/mail";
+import { addIncomingMail, getAllIncomingMails, updateIncomingMail } from "./incomingMailDB";
 
-// ... openDB, getAllIncomingMails, addIncomingMail etc.
+// Fonction de compatibilité pour l'ancien code
+export const saveIncomingMailToLocalStorage = async (mail: IncomingMail) => {
+  try {
+    const { id, ...mailData } = mail;
+    await addIncomingMail(mailData);
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde:", error);
+    throw error;
+  }
+};
 
-export async function migrateLocalStorageToIndexedDB() {
-  // Vérifie si IndexedDB est déjà peuplé
-  const db = await openDB();
-  const existing = await getAllIncomingMails();
-  if (existing.length > 0) return; // Déjà migré
+// Export des fonctions du nouveau système
+export { getAllIncomingMails, addIncomingMail, updateIncomingMail };
 
-  // Récupère les données du localStorage
-  const raw = localStorage.getItem("incomingMails");
-  if (!raw) return;
-  const mails: IncomingMail[] = JSON.parse(raw);
-
-  // Ajoute-les dans IndexedDB
-  await Promise.all(mails.map(async (mail) => {
-    // Enlève l'id s'il existe, il sera auto-incrémenté
-    const { id, ...rest } = mail as any;
-    await addIncomingMail(rest);
-  }));
-  // Optionnel : tu peux vider le localStorage
-  // localStorage.removeItem("incomingMails");
-}
+// Fonction de compatibilité pour l'édition
+export const updateIncomingMailInLocalStorage = async (id: number, update: Partial<IncomingMail>) => {
+  try {
+    await updateIncomingMail(id, update);
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour:", error);
+    return false;
+  }
+};

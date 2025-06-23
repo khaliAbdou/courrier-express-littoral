@@ -24,7 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
-import { updateOutgoingMailInLocalStorage } from "@/utils/outgoingMailStorage";
+import { updateOutgoingMail } from "@/utils/outgoingMailDB";
 
 interface EditOutgoingMailDialogProps {
   mail: OutgoingMail;
@@ -66,7 +66,7 @@ const EditOutgoingMailDialog: React.FC<EditOutgoingMailDialogProps> = ({
     setFormData((prev) => ({ ...prev, [name]: date }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (
@@ -81,13 +81,15 @@ const EditOutgoingMailDialog: React.FC<EditOutgoingMailDialogProps> = ({
       return;
     }
 
-    const success = updateOutgoingMailInLocalStorage(mail.id, formData);
-    
-    if (success) {
-      toast.success("Courrier modifié avec succès!");
-      onMailUpdated();
-      onClose();
-    } else {
+    try {
+      if (mail.id) {
+        await updateOutgoingMail(mail.id, formData);
+        toast.success("Courrier modifié avec succès!");
+        onMailUpdated();
+        onClose();
+      }
+    } catch (error) {
+      console.error("Erreur lors de la modification:", error);
       toast.error("Erreur lors de la modification du courrier.");
     }
   };
