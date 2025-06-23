@@ -1,96 +1,117 @@
 
-import { useState, useEffect } from 'react';
-import { IncomingMail, OutgoingMail } from '@/types/mail';
-import { getAllIncomingMails } from '@/utils/incomingMailDB';
-import { getAllOutgoingMails } from '@/utils/outgoingMailDB';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { IncomingMail, OutgoingMail } from "@/types/mail";
+import { toast } from "@/components/ui/sonner";
+import React from "react";
 
-export interface DashboardStats {
-  totalIncoming: number;
-  totalOutgoing: number;
-  pending: number;
-  processed: number;
-  pendingIncoming: number;
-  pendingOutgoing: number;
-  recentIncoming: IncomingMail[];
-  recentOutgoing: OutgoingMail[];
-  overdueMails: (IncomingMail | OutgoingMail)[];
+// Fonctions pour récupérer les courriers du localStorage
+function getAllIncomingMails(): IncomingMail[] {
+  const key = "incomingMails";
+  const existing = localStorage.getItem(key);
+  if (!existing) return [];
+  return JSON.parse(existing).map((mail: any) => ({
+    ...mail,
+    date: mail.date ? new Date(mail.date) : undefined,
+    responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
+  }));
 }
 
+function getAllOutgoingMails(): OutgoingMail[] {
+  const key = "outgoingMails";
+  const existing = localStorage.getItem(key);
+  if (!existing) return [];
+  return JSON.parse(existing).map((mail: any) => ({
+    ...mail,
+    date: mail.date ? new Date(mail.date) : undefined,
+  }));
+}
+
+// Fonction pour récupérer les statistiques depuis Supabase
+const fetchMailStats = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("mail_statistics")
+      .select("*")
+      .order("year", { ascending: false })
+      .order("month", { ascending: false })
+      .limit(6);
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Erreur lors de la récupération des statistiques:", error);
+    return null;
+  }
+};
+
+// Fonction pour récupérer les courriers en retard
+const fetchOverdueMails = async (): Promise<IncomingMail[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("overdue_mail_view")
+      .select("*")
+      .order("date", { ascending: false });
+      
+    if (error) throw error;
+    
+    // Transformation des données Supabase (snake_case) vers le format TypeScript (camelCase)
+    return (data || []).map(item => ({
+      id: item.id,
+      chronoNumber: item.chrono_number,
+      date: new Date(item.date),
+      medium: item.medium,
+      subject: item.subject,
+      mailType: item.mail_type,
+      responseDate: item.response_date ? new Date(item.response_date) : undefined,
+      senderName: item.sender_name,
+      senderAddress: item.sender_address,
+      recipientService: item.recipient_service,
+      observations: item.observations,
+      documentLink: item.document_link,
+      status: item.status,
+    }));
+  } catch (error) {
+    console.error("Erreur lors de la récupération des courriers en retard:", error);
+    return [];
+  }
+};
+
 export const useDashboardData = () => {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalIncoming: 0,
-    totalOutgoing: 0,
-    pending: 0,
-    processed: 0,
-    pendingIncoming: 0,
-    pendingOutgoing: 0,
-    recentIncoming: [],
-    recentOutgoing: [],
-    overdueMails: []
+  const { data: mailStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["mailStats"],
+    queryFn: fetchMailStats,
   });
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [incomingMails, outgoingMails] = await Promise.all([
-        getAllIncomingMails(),
-        getAllOutgoingMails()
-      ]);
-
-      const pendingIncoming = incomingMails.filter(mail => mail.status === 'Pending').length;
-      const pendingOutgoing = outgoingMails.filter(mail => mail.status === 'Pending').length;
-
-      const processedIncoming = incomingMails.filter(mail => mail.status === 'Completed').length;
-      const processedOutgoing = outgoingMails.filter(mail => mail.status === 'Completed').length;
-
-      // Get recent mails (last 5)
-      const recentIncoming = incomingMails
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
-
-      const recentOutgoing = outgoingMails
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-        .slice(0, 5);
-
-      // Get overdue mails
-      const now = new Date();
-      const overdueMails = [
-        ...incomingMails.filter(mail => 
-          mail.responseDate && new Date(mail.responseDate) < now && mail.status !== 'Completed'
-        ),
-        ...outgoingMails.filter(mail => 
-          mail.status === 'Pending' && 
-          new Date(mail.date).getTime() < now.getTime() - (7 * 24 * 60 * 60 * 1000) // 7 days old
-        )
-      ];
-
-      setStats({
-        totalIncoming: incomingMails.length,
-        totalOutgoing: outgoingMails.length,
-        pending: pendingIncoming + pendingOutgoing,
-        processed: processedIncoming + processedOutgoing,
-        pendingIncoming,
-        pendingOutgoing,
-        recentIncoming,
-        recentOutgoing,
-        overdueMails
-      });
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
+  
+  const { data: overdueMails, isLoading: overdueLoading } = useQuery({
+    queryKey: ["overdueMails"],
+    queryFn: fetchOverdueMails,
+  });
+  
+  // Récupération des vraies données du localStorage
+  const incomingMails = getAllIncomingMails();
+  const outgoingMails = getAllOutgoingMails();
+  
+  // Gestion des erreurs via React Error Boundary ou useEffect si nécessaire
+  React.useEffect(() => {
+    if (mailStats === null) {
+      toast.error("Erreur lors du chargement des statistiques");
     }
+  }, [mailStats]);
+  
+  // Stats calculées basées sur les vraies données
+  const stats = {
+    totalIncoming: incomingMails.length,
+    totalOutgoing: outgoingMails.length,
+    pending: incomingMails.filter(mail => mail.status === "Pending" || mail.status === "Processing").length,
+    processed: incomingMails.filter(mail => mail.status === "Completed").length,
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Fix refreshData to actually refresh the data
-  const refreshData = () => {
-    fetchData();
+  return {
+    mailStats,
+    overdueMails: overdueMails || [],
+    stats,
+    statsLoading,
+    overdueLoading,
   };
-
-  return { stats, loading, refreshData };
 };
