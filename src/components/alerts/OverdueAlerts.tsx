@@ -7,7 +7,7 @@ import { AlertTriangle, Bell, X } from 'lucide-react';
 import { IncomingMail } from '@/types/mail';
 import { format, differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
-import { getAllIncomingMails } from '@/utils/incomingMailStorage';
+import { getAllIncomingMails } from '@/utils/storageAdapter';
 
 const OverdueAlerts: React.FC = () => {
   const [overdueMails, setOverdueMails] = useState<IncomingMail[]>([]);

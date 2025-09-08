@@ -1,8 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { IncomingMail, OutgoingMail } from "@/types/mail";
-import { getAllIncomingMails } from "@/utils/incomingMailStorage";
-import { getAllOutgoingMails } from "@/utils/outgoingMailStorage";
+import { getAllIncomingMails, getAllOutgoingMails } from "@/utils/storageAdapter";
 import { differenceInDays } from "date-fns";
 
 // Fonction pour récupérer les courriers en retard depuis les données locales

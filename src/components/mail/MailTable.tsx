@@ -25,8 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EditIncomingMailDialog from "./incoming/EditIncomingMailDialog";
 import EditOutgoingMailDialog from "./outgoing/EditOutgoingMailDialog";
-import { deleteIncomingMail } from "@/utils/incomingMailStorage";
-import { deleteOutgoingMail } from "@/utils/outgoingMailStorage";
+import { deleteIncomingMail, deleteOutgoingMail } from "@/utils/storageAdapter";
 import { toast } from "sonner";
 
 interface MailTableProps {

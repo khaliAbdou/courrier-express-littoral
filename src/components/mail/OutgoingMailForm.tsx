@@ -4,7 +4,7 @@ import { MailMedium } from "@/types/mail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { AuditLogger } from '@/utils/auditLogger';
-import { saveOutgoingMailToLocalStorage } from "@/utils/outgoingMailStorage";
+import { saveOutgoingMail } from "@/utils/storageAdapter";
 import OutgoingMailFormFields from "./outgoing/OutgoingMailFormFields";
 import OutgoingMailFormActions from "./outgoing/OutgoingMailFormActions";
 import { Send } from "lucide-react";
@@ -78,7 +78,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
       const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const mailWithId = { ...formData, id: mailId, status: "Processing" };
 
-      await saveOutgoingMailToLocalStorage(mailWithId);
+      await saveOutgoingMail(mailWithId);
       AuditLogger.logMailCreate('outgoing', mailId, formData.chronoNumber);
 
       if (onMailSaved) onMailSaved();
