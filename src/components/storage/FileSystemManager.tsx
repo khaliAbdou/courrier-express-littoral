@@ -5,18 +5,31 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FolderOpen, Download, Upload, HardDrive, AlertCircle, CheckCircle } from 'lucide-react';
 import { storageAdapter } from '@/utils/storageAdapter';
+import { fileSystemStorage } from '@/utils/fileSystemStorage';
 import { toast } from 'sonner';
 
 const FileSystemManager: React.FC = () => {
   const [isSupported, setIsSupported] = useState(false);
+  const [isUsable, setIsUsable] = useState(false);
   const [isUsingFileSystem, setIsUsingFileSystem] = useState(false);
   const [storageLocation, setStorageLocation] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setIsSupported(storageAdapter.isFileSystemSupported());
-    setIsUsingFileSystem(storageAdapter.isUsingFileSystem());
-    setStorageLocation(storageAdapter.getStorageLocation());
+    const checkAvailability = async () => {
+      const supported = storageAdapter.isFileSystemSupported();
+      setIsSupported(supported);
+      
+      if (supported) {
+        const usable = await fileSystemStorage.isUsable();
+        setIsUsable(usable);
+      }
+      
+      setIsUsingFileSystem(storageAdapter.isUsingFileSystem());
+      setStorageLocation(storageAdapter.getStorageLocation());
+    };
+    
+    checkAvailability();
   }, []);
 
   const handleSelectDirectory = async () => {
@@ -128,10 +141,21 @@ const FileSystemManager: React.FC = () => {
           </div>
         )}
 
+        {!isUsable && isSupported && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Le stockage sur disque n'est pas disponible dans l'environnement de prévisualisation.
+              Cette fonctionnalité sera disponible lorsque vous déploierez votre application.
+              En attendant, les données sont stockées localement dans le navigateur.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Button
             onClick={handleSelectDirectory}
-            disabled={isLoading}
+            disabled={isLoading || !isUsable}
             className="flex items-center gap-2"
           >
             <FolderOpen className="h-4 w-4" />
@@ -141,7 +165,7 @@ const FileSystemManager: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleExport}
-            disabled={isLoading}
+            disabled={isLoading || !isUsable}
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
@@ -151,7 +175,7 @@ const FileSystemManager: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleImport}
-            disabled={isLoading}
+            disabled={isLoading || !isUsable}
             className="flex items-center gap-2"
           >
             <Upload className="h-4 w-4" />
