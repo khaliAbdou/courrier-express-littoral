@@ -50,12 +50,21 @@ export const openMailFile = async (): Promise<boolean> => {
   try {
     const [fileHandle] = await window.showOpenFilePicker({
       types: [{
-        description: 'Mail data files',
+        description: 'Fichiers de données courrier (*.json)',
         accept: { 'application/json': ['.json'] }
-      }]
+      }],
+      multiple: false
     });
 
     currentFileHandle = fileHandle;
+    
+    // Save file handle reference for persistence
+    try {
+      localStorage.setItem('mailFileHandleName', fileHandle.name);
+    } catch (e) {
+      console.warn('Could not save file handle name to localStorage');
+    }
+
     return await loadFromFile();
   } catch (error) {
     console.error('Error opening file:', error);
@@ -72,10 +81,10 @@ export const createNewMailFile = async (): Promise<boolean> => {
   try {
     const fileHandle = await window.showSaveFilePicker({
       types: [{
-        description: 'Mail data files',
+        description: 'Fichiers de données courrier (*.json)',
         accept: { 'application/json': ['.json'] }
       }],
-      suggestedName: `mail-data-${new Date().toISOString().split('T')[0]}.json`
+      suggestedName: `courrier-anor-${new Date().toISOString().split('T')[0]}.json`
     });
 
     currentFileHandle = fileHandle;
@@ -86,9 +95,47 @@ export const createNewMailFile = async (): Promise<boolean> => {
       exportDate: new Date().toISOString()
     };
 
+    // Save file handle reference for persistence
+    try {
+      localStorage.setItem('mailFileHandleName', fileHandle.name);
+    } catch (e) {
+      console.warn('Could not save file handle name to localStorage');
+    }
+
     return await saveToFile();
   } catch (error) {
     console.error('Error creating file:', error);
+    return false;
+  }
+};
+
+// Save file to a specific location (Save As functionality)
+export const saveMailFileAs = async (): Promise<boolean> => {
+  if (!isFileSystemAccessSupported()) {
+    throw new Error('File System Access API not supported');
+  }
+
+  try {
+    const fileHandle = await window.showSaveFilePicker({
+      types: [{
+        description: 'Fichiers de données courrier (*.json)',
+        accept: { 'application/json': ['.json'] }
+      }],
+      suggestedName: currentFileHandle?.name || `courrier-anor-${new Date().toISOString().split('T')[0]}.json`
+    });
+
+    currentFileHandle = fileHandle;
+    
+    // Save file handle reference for persistence
+    try {
+      localStorage.setItem('mailFileHandleName', fileHandle.name);
+    } catch (e) {
+      console.warn('Could not save file handle name to localStorage');
+    }
+
+    return await saveToFile();
+  } catch (error) {
+    console.error('Error saving file as:', error);
     return false;
   }
 };
@@ -211,9 +258,97 @@ export const getAllOutgoingMails = (): OutgoingMail[] => {
 };
 
 // Get current file info
-export const getCurrentFileInfo = (): { hasFile: boolean; fileName?: string } => {
+export const getCurrentFileInfo = (): { hasFile: boolean; fileName?: string; filePath?: string } => {
   return {
     hasFile: currentFileHandle !== null,
-    fileName: currentFileHandle?.name
+    fileName: currentFileHandle?.name,
+    filePath: currentFileHandle?.name // In File System Access API, we don't get full path for security reasons
   };
+};
+
+// Export current data to a new location
+export const exportMailData = async (): Promise<boolean> => {
+  if (!isFileSystemAccessSupported()) {
+    throw new Error('File System Access API not supported');
+  }
+
+  try {
+    const fileHandle = await window.showSaveFilePicker({
+      types: [{
+        description: 'Fichiers de données courrier (*.json)',
+        accept: { 'application/json': ['.json'] }
+      }],
+      suggestedName: `export-courrier-${new Date().toISOString().split('T')[0]}.json`
+    });
+
+    const writable = await fileHandle.createWritable();
+    const dataToExport = {
+      ...mailData,
+      exportDate: new Date().toISOString()
+    };
+    
+    await writable.write(JSON.stringify(dataToExport, null, 2));
+    await writable.close();
+    return true;
+  } catch (error) {
+    console.error('Error exporting data:', error);
+    return false;
+  }
+};
+
+// Import data from a file (merge with current data)
+export const importMailData = async (): Promise<{ success: boolean; importedCount: number; errors: string[] }> => {
+  if (!isFileSystemAccessSupported()) {
+    throw new Error('File System Access API not supported');
+  }
+
+  const result = {
+    success: false,
+    importedCount: 0,
+    errors: [] as string[]
+  };
+
+  try {
+    const [fileHandle] = await window.showOpenFilePicker({
+      types: [{
+        description: 'Fichiers de données courrier (*.json)',
+        accept: { 'application/json': ['.json'] }
+      }]
+    });
+
+    const file = await fileHandle.getFile();
+    const content = await file.text();
+    const importedData = JSON.parse(content) as MailData;
+    
+    // Merge imported data with current data
+    if (importedData.incomingMails) {
+      for (const mail of importedData.incomingMails) {
+        try {
+          const { id, ...mailWithoutId } = mail;
+          await saveIncomingMail(mailWithoutId);
+          result.importedCount++;
+        } catch (error) {
+          result.errors.push(`Erreur importation courrier entrant: ${error}`);
+        }
+      }
+    }
+
+    if (importedData.outgoingMails) {
+      for (const mail of importedData.outgoingMails) {
+        try {
+          const { id, ...mailWithoutId } = mail;
+          await saveOutgoingMail(mailWithoutId);
+          result.importedCount++;
+        } catch (error) {
+          result.errors.push(`Erreur importation courrier sortant: ${error}`);
+        }
+      }
+    }
+
+    result.success = result.errors.length === 0;
+    return result;
+  } catch (error) {
+    result.errors.push(`Erreur lors de l'importation: ${error}`);
+    return result;
+  }
 };

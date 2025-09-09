@@ -11,13 +11,19 @@ import {
   AlertTriangle,
   CheckCircle,
   FileText,
-  Database
+  Database,
+  Save,
+  FileDown,
+  FileUp
 } from 'lucide-react';
 import { 
   isFileSystemAccessSupported,
   openMailFile,
   createNewMailFile,
-  getCurrentFileInfo
+  getCurrentFileInfo,
+  saveMailFileAs,
+  exportMailData,
+  importMailData
 } from '@/utils/fileSystemStorage';
 import { 
   migrateFromIndexedDB,
@@ -39,6 +45,8 @@ const FileSystemManager: React.FC<FileSystemManagerProps> = ({ onFileChange }) =
     needsMigration: false
   });
   const [isMigrating, setIsMigrating] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     checkSupport();
@@ -107,6 +115,51 @@ const FileSystemManager: React.FC<FileSystemManagerProps> = ({ onFileChange }) =
     }
   };
 
+  const handleSaveAs = async () => {
+    try {
+      const success = await saveMailFileAs();
+      if (success) {
+        toast.success('Fichier sauvegardé à l\'emplacement choisi');
+        await updateStatus();
+        onFileChange?.();
+      }
+    } catch (error) {
+      toast.error('Erreur lors de la sauvegarde');
+    }
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const success = await exportMailData();
+      if (success) {
+        toast.success('Données exportées avec succès');
+      }
+    } catch (error) {
+      toast.error('Erreur lors de l\'exportation');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleImport = async () => {
+    setIsImporting(true);
+    try {
+      const result = await importMailData();
+      if (result.success) {
+        toast.success(`Import réussi: ${result.importedCount} éléments importés`);
+        await updateStatus();
+        onFileChange?.();
+      } else {
+        toast.error(`Import échoué: ${result.errors.join(', ')}`);
+      }
+    } catch (error) {
+      toast.error('Erreur lors de l\'importation');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (!isSupported) {
     return (
       <Alert className="mb-4">
@@ -151,14 +204,14 @@ const FileSystemManager: React.FC<FileSystemManagerProps> = ({ onFileChange }) =
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <Button 
               onClick={handleOpenFile}
               variant="outline"
               className="flex items-center gap-2"
             >
               <FolderOpen className="h-4 w-4" />
-              Ouvrir un fichier
+              Ouvrir
             </Button>
             
             <Button 
@@ -167,7 +220,41 @@ const FileSystemManager: React.FC<FileSystemManagerProps> = ({ onFileChange }) =
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Nouveau fichier
+              Nouveau
+            </Button>
+
+            {fileInfo.hasFile && (
+              <Button 
+                onClick={handleSaveAs}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Sauvegarder sous...
+              </Button>
+            )}
+
+            <Button 
+              onClick={handleExport}
+              disabled={isExporting}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileDown className="h-4 w-4" />
+              {isExporting ? 'Export...' : 'Exporter'}
+            </Button>
+          </div>
+
+          {/* Import section */}
+          <div className="mt-4 pt-4 border-t">
+            <Button 
+              onClick={handleImport}
+              disabled={isImporting}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <FileUp className="h-4 w-4" />
+              {isImporting ? 'Import en cours...' : 'Importer des données'}
             </Button>
           </div>
         </CardContent>
