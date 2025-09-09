@@ -10,33 +10,6 @@ class FileSystemStorage {
     return 'showDirectoryPicker' in window && 'showSaveFilePicker' in window && 'showOpenFilePicker' in window;
   }
 
-  // Vérifie si l'API est utilisable (pas bloquée par iframe cross-origin)
-  async isUsable(): Promise<boolean> {
-    if (!this.isSupported()) return false;
-    
-    try {
-      // Test rapide pour voir si l'API est bloquée
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Timeout'));
-        }, 100);
-        
-        // Tenter d'utiliser l'API sans interaction utilisateur pour détecter les restrictions
-        if (window.top !== window.self) {
-          // Nous sommes dans un iframe
-          clearTimeout(timeout);
-          reject(new Error('Cross-origin iframe detected'));
-        } else {
-          clearTimeout(timeout);
-          resolve(true);
-        }
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   // Sélectionne un dossier pour le stockage
   async selectStorageDirectory(): Promise<boolean> {
     if (!this.isSupported()) {
