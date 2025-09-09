@@ -1,7 +1,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { IncomingMail, OutgoingMail } from "@/types/mail";
-import { getAllIncomingMails, getAllOutgoingMails } from "@/utils/storageAdapter";
+import { getAllIncomingMails } from "@/utils/incomingMailStorage";
+import { getAllOutgoingMails } from "@/utils/outgoingMailStorage";
 import { computeMonthlyStats } from "@/utils/statisticsUtils";
 
 export function useStatisticsData() {

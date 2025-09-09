@@ -23,7 +23,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
-import { updateIncomingMail } from "@/utils/storageAdapter";
+import { updateIncomingMailInLocalStorage } from "@/utils/incomingMailStorage";
 
 interface EditIncomingMailDialogProps {
   mail: IncomingMail;
@@ -66,7 +66,7 @@ const EditIncomingMailDialog: React.FC<EditIncomingMailDialogProps> = ({
     setFormData((prev) => ({ ...prev, [name]: date }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (
@@ -81,7 +81,7 @@ const EditIncomingMailDialog: React.FC<EditIncomingMailDialogProps> = ({
       return;
     }
 
-    const success = await updateIncomingMail(mail.id, formData);
+    const success = updateIncomingMailInLocalStorage(mail.id, formData);
     
     if (success) {
       toast.success("Courrier modifié avec succès!");

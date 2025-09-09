@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
-import { getAllIncomingMails } from "@/utils/storageAdapter";
+import { getAllIncomingMails } from "@/utils/incomingMailStorage";
 
 const IncomingMailPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");

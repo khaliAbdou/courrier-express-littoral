@@ -8,7 +8,6 @@ import MailTypeChart from "@/components/dashboard/MailTypeChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import OverdueMail from "@/components/dashboard/OverdueMail";
 import OverdueAlerts from "@/components/alerts/OverdueAlerts";
-import FileSystemManager from "@/components/storage/FileSystemManager";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Index = () => {
@@ -35,11 +34,6 @@ const Index = () => {
         {/* Alertes des courriers en retard */}
         <div className="mb-8">
           <OverdueAlerts />
-        </div>
-
-        {/* File System Manager */}
-        <div className="mb-8">
-          <FileSystemManager />
         </div>
 
         {/* Dashboard Stats and Quick Actions */}

@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AuditLogger } from '@/utils/auditLogger';
-import { saveIncomingMail } from "@/utils/storageAdapter";
+import { saveIncomingMailToLocalStorage } from "@/utils/incomingMailStorage";
 
 interface IncomingMailFormProps {
   onMailSaved?: () => void;
@@ -76,7 +76,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
       const mailId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
       const mailWithId = { ...formData, id: mailId };
 
-      await saveIncomingMail(mailWithId);
+      await saveIncomingMailToLocalStorage(mailWithId);
       AuditLogger.logMailCreate('incoming', mailId, formData.chronoNumber);
 
       if (onMailSaved) onMailSaved();
