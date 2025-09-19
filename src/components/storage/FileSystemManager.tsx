@@ -123,8 +123,11 @@ const FileSystemManager: React.FC = () => {
 
         {storageLocation && (
           <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium">Dossier de stockage :</p>
-            <p className="text-sm text-muted-foreground">{storageLocation}</p>
+            <p className="text-sm font-medium">Dossier de stockage configuré :</p>
+            <p className="text-sm text-muted-foreground font-mono">{storageLocation}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Toutes les données sont stockées directement sur votre disque dur
+            </p>
           </div>
         )}
 
@@ -162,8 +165,9 @@ const FileSystemManager: React.FC = () => {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Stockage sur disque :</strong> Vos données seront sauvegardées dans le dossier que vous choisissez.
-            Vous gardez le contrôle total de vos fichiers et pouvez les sauvegarder ou les partager facilement.
+            <strong>Stockage 100% local :</strong> Cette application utilise exclusivement le stockage sur disque dur.
+            Aucune donnée n'est stockée dans le navigateur ou sur internet. Vous avez le contrôle total de vos fichiers
+            et pouvez les sauvegarder, partager ou migrer facilement.
           </AlertDescription>
         </Alert>
       </CardContent>

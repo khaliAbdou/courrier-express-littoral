@@ -1,17 +1,10 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowUpDown } from "lucide-react";
 import { ChartContainer } from "@/components/ui/chart";
 import { PieChart, Pie, ResponsiveContainer, Tooltip, Legend, Cell } from "recharts";
+import { getIncomingMailsFromStorage } from "@/utils/dataHelpers";
 import { IncomingMail } from "@/types/mail";
-
-// Fonction utilitaire pour lire les courriers entrants du localStorage
-function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  return JSON.parse(existing);
-}
 
 // Couleurs pour chaque type
 const TYPE_COLORS: { [key: string]: string } = {
@@ -33,9 +26,23 @@ const LABELS: { [key: string]: string } = {
 const MAIL_TYPES = ["Administrative", "Technical", "Commercial", "Financial", "Other"];
 
 const MailTypeChart: React.FC = () => {
+  const [mails, setMails] = useState<IncomingMail[]>([]);
+
+  useEffect(() => {
+    const loadMails = async () => {
+      try {
+        const incomingMails = await getIncomingMailsFromStorage();
+        setMails(incomingMails);
+      } catch (error) {
+        console.error('Erreur lors du chargement des courriers:', error);
+      }
+    };
+
+    loadMails();
+  }, []);
+
   // Regroupe par type de mail
   const mailTypeData = useMemo(() => {
-    const mails = getAllIncomingMails();
     const counts: { [key: string]: number } = {};
     MAIL_TYPES.forEach(type => counts[type] = 0);
 
@@ -51,7 +58,7 @@ const MailTypeChart: React.FC = () => {
         color: TYPE_COLORS[type],
       }))
       .filter(item => item.value > 0);
-  }, []);
+  }, [mails]);
 
   return (
     <Card>

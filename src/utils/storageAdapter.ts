@@ -1,15 +1,14 @@
 import { IncomingMail, OutgoingMail } from '@/types/mail';
-import { db } from './database';
-import { fileSystemStorage } from './fileSystemStorage';
 import { MailStorageData } from '@/types/fileSystemAccess';
+import { fileSystemStorage } from './fileSystemStorage';
 
-export class StorageAdapter {
-  private static instance: StorageAdapter;
-  private useFileSystem = false;
+class StorageAdapter {
+  private static instance: StorageAdapter | null = null;
+  private initialized: boolean = false;
+  private storageReady: boolean = false;
 
-  private constructor() {
-    // Vérifier si l'utilisateur a configuré le stockage sur disque
-    this.useFileSystem = fileSystemStorage.isSupported() && fileSystemStorage.hasStorageDirectory();
+  constructor() {
+    // Le système utilisera uniquement le stockage sur disque
   }
 
   static getInstance(): StorageAdapter {
@@ -19,105 +18,161 @@ export class StorageAdapter {
     return StorageAdapter.instance;
   }
 
-  // Configuration du type de stockage
-  async enableFileSystemStorage(): Promise<boolean> {
+  // Initialise le stockage sur système de fichiers
+  async initializeFileSystemStorage(): Promise<boolean> {
+    if (this.initialized) return this.storageReady;
+    
+    this.initialized = true;
+    
+    // Vérifier si l'API File System Access est supportée
     if (!fileSystemStorage.isSupported()) {
+      console.warn('File System Access API non supporté');
       return false;
     }
-    
-    const success = await fileSystemStorage.selectStorageDirectory();
-    if (success) {
-      this.useFileSystem = true;
-      // Migrer les données existantes de IndexedDB vers le système de fichiers
-      await this.migrateToFileSystem();
+
+    // Vérifier si un dossier est déjà configuré
+    if (fileSystemStorage.hasStorageDirectory()) {
+      this.storageReady = true;
+      return true;
     }
+
+    // Sinon, demander à l'utilisateur de sélectionner un dossier
+    const success = await fileSystemStorage.selectStorageDirectory();
+    this.storageReady = success;
     return success;
   }
 
-  // Migration des données d'IndexedDB vers le système de fichiers
-  private async migrateToFileSystem(): Promise<void> {
-    try {
-      const incomingMails = await db.incomingMails.toArray();
-      const outgoingMails = await db.outgoingMails.toArray();
-      
-      const data: MailStorageData = {
-        incomingMails,
-        outgoingMails,
-        version: '1.0',
-        lastModified: new Date().toISOString()
-      };
+  // Active le stockage sur système de fichiers
+  async enableFileSystemStorage(): Promise<boolean> {
+    const success = await fileSystemStorage.selectStorageDirectory();
+    this.storageReady = success;
+    return success;
+  }
 
+  // Sauvegarde un courrier entrant
+  async saveIncomingMail(mail: any): Promise<void> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      throw new Error('Stockage non disponible - veuillez configurer un dossier de stockage');
+    }
+
+    try {
+      const data = await fileSystemStorage.loadData() || { 
+        incomingMails: [], 
+        outgoingMails: [], 
+        version: '1.0.0', 
+        lastModified: new Date().toISOString() 
+      };
+      
+      data.incomingMails.push(mail);
+      data.lastModified = new Date().toISOString();
       await fileSystemStorage.saveData(data);
     } catch (error) {
-      console.error('Erreur lors de la migration:', error);
+      console.error('Erreur lors de la sauvegarde du courrier entrant:', error);
+      throw error;
     }
   }
 
-  // Sauvegarde d'un courrier entrant
-  async saveIncomingMail(mail: any): Promise<void> {
-    if (this.useFileSystem) {
-      await this.saveToFileSystem();
-    }
-    
-    // Toujours sauvegarder aussi en IndexedDB comme fallback
-    const mailWithStatus = { ...mail, status: "Processing" };
-    await db.incomingMails.add(mailWithStatus);
-    
-    if (this.useFileSystem) {
-      await this.syncToFileSystem();
-    }
-  }
-
-  // Sauvegarde d'un courrier sortant
+  // Sauvegarde un courrier sortant
   async saveOutgoingMail(mail: any): Promise<void> {
-    if (this.useFileSystem) {
-      await this.saveToFileSystem();
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
     }
     
-    // Toujours sauvegarder aussi en IndexedDB comme fallback
-    await db.outgoingMails.add(mail);
-    
-    if (this.useFileSystem) {
-      await this.syncToFileSystem();
+    if (!this.storageReady) {
+      throw new Error('Stockage non disponible - veuillez configurer un dossier de stockage');
+    }
+
+    try {
+      const data = await fileSystemStorage.loadData() || { 
+        incomingMails: [], 
+        outgoingMails: [], 
+        version: '1.0.0', 
+        lastModified: new Date().toISOString() 
+      };
+      
+      data.outgoingMails.push(mail);
+      data.lastModified = new Date().toISOString();
+      await fileSystemStorage.saveData(data);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du courrier sortant:', error);
+      throw error;
     }
   }
 
-  // Mise à jour d'un courrier entrant
+  // Met à jour un courrier entrant
   async updateIncomingMail(mailId: string, updatedMail: any): Promise<boolean> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      throw new Error('Stockage non disponible');
+    }
+
     try {
-      const result = await db.incomingMails.update(mailId, updatedMail);
-      
-      if (this.useFileSystem) {
-        await this.syncToFileSystem();
+      const data = await fileSystemStorage.loadData();
+      if (data) {
+        const index = data.incomingMails.findIndex(mail => mail.id === mailId);
+        if (index !== -1) {
+          data.incomingMails[index] = { ...data.incomingMails[index], ...updatedMail };
+          data.lastModified = new Date().toISOString();
+          await fileSystemStorage.saveData(data);
+          return true;
+        }
       }
-      
-      return result > 0;
+      return false;
     } catch (error) {
-      console.error("Erreur lors de la mise à jour du courrier entrant:", error);
+      console.error('Erreur lors de la mise à jour du courrier entrant:', error);
       return false;
     }
   }
 
-  // Mise à jour d'un courrier sortant
+  // Met à jour un courrier sortant
   async updateOutgoingMail(mailId: string, updatedMail: any): Promise<boolean> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      throw new Error('Stockage non disponible');
+    }
+
     try {
-      const result = await db.outgoingMails.update(mailId, updatedMail);
-      
-      if (this.useFileSystem) {
-        await this.syncToFileSystem();
+      const data = await fileSystemStorage.loadData();
+      if (data) {
+        const index = data.outgoingMails.findIndex(mail => mail.id === mailId);
+        if (index !== -1) {
+          data.outgoingMails[index] = { ...data.outgoingMails[index], ...updatedMail };
+          data.lastModified = new Date().toISOString();
+          await fileSystemStorage.saveData(data);
+          return true;
+        }
       }
-      
-      return result > 0;
+      return false;
     } catch (error) {
-      console.error("Erreur lors de la mise à jour du courrier sortant:", error);
+      console.error('Erreur lors de la mise à jour du courrier sortant:', error);
       return false;
     }
   }
 
-  // Récupération de tous les courriers entrants
+  // Récupère tous les courriers entrants
   async getAllIncomingMails(): Promise<IncomingMail[]> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      return [];
+    }
+
     try {
-      const mails = await db.incomingMails.toArray();
+      const data = await fileSystemStorage.loadData();
+      const mails = data?.incomingMails || [];
+      
       return mails.map((mail: any) => ({
         ...mail,
         date: mail.date ? new Date(mail.date) : undefined,
@@ -125,96 +180,108 @@ export class StorageAdapter {
         responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
       }));
     } catch (error) {
-      console.error("Erreur lors de la récupération des courriers entrants:", error);
+      console.error('Erreur lors de la récupération des courriers entrants:', error);
       return [];
     }
   }
 
-  // Récupération de tous les courriers sortants
+  // Récupère tous les courriers sortants
   async getAllOutgoingMails(): Promise<OutgoingMail[]> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      return [];
+    }
+
     try {
-      const mails = await db.outgoingMails.toArray();
+      const data = await fileSystemStorage.loadData();
+      const mails = data?.outgoingMails || [];
+      
       return mails.map((mail: any) => ({
         ...mail,
         date: mail.date ? new Date(mail.date) : undefined,
         issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
       }));
     } catch (error) {
-      console.error("Erreur lors de la récupération des courriers sortants:", error);
+      console.error('Erreur lors de la récupération des courriers sortants:', error);
       return [];
     }
   }
 
-  // Suppression d'un courrier entrant
+  // Supprime un courrier entrant
   async deleteIncomingMail(mailId: string): Promise<boolean> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      return false;
+    }
+
     try {
-      await db.incomingMails.delete(mailId);
-      
-      if (this.useFileSystem) {
-        await this.syncToFileSystem();
+      const data = await fileSystemStorage.loadData();
+      if (data) {
+        data.incomingMails = data.incomingMails.filter(mail => mail.id !== mailId);
+        data.lastModified = new Date().toISOString();
+        await fileSystemStorage.saveData(data);
+        return true;
       }
-      
-      return true;
+      return false;
     } catch (error) {
-      console.error("Erreur lors de la suppression du courrier entrant:", error);
+      console.error('Erreur lors de la suppression du courrier entrant:', error);
       return false;
     }
   }
 
-  // Suppression d'un courrier sortant
+  // Supprime un courrier sortant
   async deleteOutgoingMail(mailId: string): Promise<boolean> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      return false;
+    }
+
     try {
-      await db.outgoingMails.delete(mailId);
-      
-      if (this.useFileSystem) {
-        await this.syncToFileSystem();
+      const data = await fileSystemStorage.loadData();
+      if (data) {
+        data.outgoingMails = data.outgoingMails.filter(mail => mail.id !== mailId);
+        data.lastModified = new Date().toISOString();
+        await fileSystemStorage.saveData(data);
+        return true;
       }
-      
-      return true;
+      return false;
     } catch (error) {
-      console.error("Erreur lors de la suppression du courrier sortant:", error);
+      console.error('Erreur lors de la suppression du courrier sortant:', error);
       return false;
     }
   }
 
-  // Synchronisation avec le système de fichiers
-  private async syncToFileSystem(): Promise<void> {
-    if (!this.useFileSystem) return;
-
-    try {
-      const incomingMails = await db.incomingMails.toArray();
-      const outgoingMails = await db.outgoingMails.toArray();
-      
-      const data: MailStorageData = {
-        incomingMails,
-        outgoingMails,
-        version: '1.0',
-        lastModified: new Date().toISOString()
-      };
-
-      await fileSystemStorage.saveData(data);
-    } catch (error) {
-      console.error('Erreur lors de la synchronisation:', error);
-    }
-  }
-
-  private async saveToFileSystem(): Promise<void> {
-    // Cette méthode est appelée avant la sauvegarde en IndexedDB
-    // pour préparer la synchronisation
-  }
-
-  // Export des données
+  // Exporte toutes les données
   async exportData(): Promise<boolean> {
+    if (!this.storageReady) {
+      await this.initializeFileSystemStorage();
+    }
+    
+    if (!this.storageReady) {
+      return false;
+    }
+
     try {
-      const incomingMails = await this.getAllIncomingMails();
-      const outgoingMails = await this.getAllOutgoingMails();
-      
-      const data: MailStorageData = {
-        incomingMails,
-        outgoingMails,
-        version: '1.0',
-        lastModified: new Date().toISOString()
-      };
+      const data = await fileSystemStorage.loadData();
+      if (!data) {
+        // Créer des données vides si aucune donnée n'existe
+        const emptyData: MailStorageData = {
+          incomingMails: [],
+          outgoingMails: [],
+          version: '1.0.0',
+          lastModified: new Date().toISOString()
+        };
+        return await fileSystemStorage.exportData(emptyData);
+      }
 
       return await fileSystemStorage.exportData(data);
     } catch (error) {
@@ -223,23 +290,15 @@ export class StorageAdapter {
     }
   }
 
-  // Import des données
+  // Importe des données
   async importData(): Promise<boolean> {
     try {
       const data = await fileSystemStorage.importData();
       if (!data) return false;
 
-      // Importer dans IndexedDB
-      await db.incomingMails.clear();
-      await db.outgoingMails.clear();
-      
-      if (data.incomingMails) {
-        await db.incomingMails.bulkAdd(data.incomingMails);
-      }
-      
-      if (data.outgoingMails) {
-        await db.outgoingMails.bulkAdd(data.outgoingMails);
-      }
+      // Sauvegarder les données importées
+      await fileSystemStorage.saveData(data);
+      this.storageReady = true;
 
       return true;
     } catch (error) {
@@ -248,17 +307,24 @@ export class StorageAdapter {
     }
   }
 
-  // Getters pour l'état
+  // Vérifie si le système de fichiers est utilisé
   isUsingFileSystem(): boolean {
-    return this.useFileSystem;
+    return this.storageReady;
   }
 
+  // Vérifie si le système de fichiers est supporté
   isFileSystemSupported(): boolean {
     return fileSystemStorage.isSupported();
   }
 
+  // Obtient l'emplacement de stockage
   getStorageLocation(): string | null {
     return fileSystemStorage.getStorageDirectoryName();
+  }
+
+  // Vérifie si le stockage est prêt
+  isStorageReady(): boolean {
+    return this.storageReady;
   }
 }
 

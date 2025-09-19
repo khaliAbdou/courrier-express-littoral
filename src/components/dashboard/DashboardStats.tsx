@@ -2,39 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Mail, Send, Clock, CheckCircle, TrendingUp } from "lucide-react";
-import { IncomingMail, OutgoingMail } from "@/types/mail";
-
-// Fonctions utilitaires pour lire les courriers depuis le localStorage
-function getAllIncomingMails(): IncomingMail[] {
-  const key = "incomingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  try {
-    return JSON.parse(existing).map((mail: any) => ({
-      ...mail,
-      date: mail.date ? new Date(mail.date) : undefined,
-      responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-    }));
-  } catch (error) {
-    console.error("Erreur lors de la récupération des courriers entrants:", error);
-    return [];
-  }
-}
-
-function getAllOutgoingMails(): OutgoingMail[] {
-  const key = "outgoingMails";
-  const existing = localStorage.getItem(key);
-  if (!existing) return [];
-  try {
-    return JSON.parse(existing).map((mail: any) => ({
-      ...mail,
-      date: mail.date ? new Date(mail.date) : undefined,
-    }));
-  } catch (error) {
-    console.error("Erreur lors de la récupération des courriers sortants:", error);
-    return [];
-  }
-}
+import { getIncomingMailsFromStorage, getOutgoingMailsFromStorage } from "@/utils/dataHelpers";
 
 interface DashboardStatsProps {
   totalIncoming: number;

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageSquare, Plus, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { saveGenericData, getGenericData } from '@/utils/dataHelpers';
 
 interface Comment {
   id: string;
@@ -31,23 +32,19 @@ const MailComments: React.FC<MailCommentsProps> = ({ mailId, mailType }) => {
     loadComments();
   }, [mailId]);
 
-  const loadComments = () => {
+  const loadComments = async () => {
     const key = `mail_comments_${mailId}`;
-    const existing = localStorage.getItem(key);
-    if (existing) {
-      try {
-        const parsed = JSON.parse(existing).map((comment: any) => ({
-          ...comment,
-          createdAt: new Date(comment.createdAt)
-        }));
-        setComments(parsed);
-      } catch {
-        setComments([]);
-      }
+    const savedComments = getGenericData<Comment[]>(key);
+    if (savedComments) {
+      const parsed = savedComments.map((comment: any) => ({
+        ...comment,
+        createdAt: new Date(comment.createdAt)
+      }));
+      setComments(parsed);
     }
   };
 
-  const saveComment = () => {
+  const saveComment = async () => {
     if (!newComment.trim()) {
       toast.error('Veuillez saisir un commentaire');
       return;
@@ -66,7 +63,7 @@ const MailComments: React.FC<MailCommentsProps> = ({ mailId, mailType }) => {
     setComments(updatedComments);
 
     const key = `mail_comments_${mailId}`;
-    localStorage.setItem(key, JSON.stringify(updatedComments));
+    await saveGenericData(key, updatedComments);
 
     setNewComment('');
     setIsAdding(false);
