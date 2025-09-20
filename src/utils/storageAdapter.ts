@@ -24,9 +24,10 @@ class StorageAdapter {
     
     this.initialized = true;
     
-    // Vérifier si l'API File System Access est supportée
-    if (!fileSystemStorage.isSupported()) {
-      console.warn('File System Access API non supporté');
+    // Vérifier si l'API File System Access est supportée et utilisable
+    if (!fileSystemStorage.isSupported() || !fileSystemStorage.isUsable()) {
+      console.warn('File System Access API non supporté ou non utilisable, utilisation du localStorage');
+      this.storageReady = false;
       return false;
     }
 
@@ -56,7 +57,17 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      throw new Error('Stockage non disponible - veuillez configurer un dossier de stockage');
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_incomingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        mails.push(mail);
+        localStorage.setItem('mailApp_incomingMails', JSON.stringify(mails));
+        return;
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde dans localStorage:', error);
+        throw error;
+      }
     }
 
     try {
@@ -83,7 +94,17 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      throw new Error('Stockage non disponible - veuillez configurer un dossier de stockage');
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_outgoingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        mails.push(mail);
+        localStorage.setItem('mailApp_outgoingMails', JSON.stringify(mails));
+        return;
+      } catch (error) {
+        console.error('Erreur lors de la sauvegarde dans localStorage:', error);
+        throw error;
+      }
     }
 
     try {
@@ -110,7 +131,21 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      throw new Error('Stockage non disponible');
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_incomingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        const index = mails.findIndex((mail: any) => mail.id === mailId);
+        if (index !== -1) {
+          mails[index] = { ...mails[index], ...updatedMail };
+          localStorage.setItem('mailApp_incomingMails', JSON.stringify(mails));
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour dans localStorage:', error);
+        return false;
+      }
     }
 
     try {
@@ -138,7 +173,21 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      throw new Error('Stockage non disponible');
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_outgoingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        const index = mails.findIndex((mail: any) => mail.id === mailId);
+        if (index !== -1) {
+          mails[index] = { ...mails[index], ...updatedMail };
+          localStorage.setItem('mailApp_outgoingMails', JSON.stringify(mails));
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour dans localStorage:', error);
+        return false;
+      }
     }
 
     try {
@@ -166,7 +215,20 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      return [];
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_incomingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        return mails.map((mail: any) => ({
+          ...mail,
+          date: mail.date ? new Date(mail.date) : undefined,
+          issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
+          responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
+        }));
+      } catch (error) {
+        console.error('Erreur lors de la récupération depuis localStorage:', error);
+        return [];
+      }
     }
 
     try {
@@ -192,7 +254,19 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      return [];
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_outgoingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        return mails.map((mail: any) => ({
+          ...mail,
+          date: mail.date ? new Date(mail.date) : undefined,
+          issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
+        }));
+      } catch (error) {
+        console.error('Erreur lors de la récupération depuis localStorage:', error);
+        return [];
+      }
     }
 
     try {
@@ -217,7 +291,17 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      return false;
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_incomingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        const filteredMails = mails.filter((mail: any) => mail.id !== mailId);
+        localStorage.setItem('mailApp_incomingMails', JSON.stringify(filteredMails));
+        return true;
+      } catch (error) {
+        console.error('Erreur lors de la suppression dans localStorage:', error);
+        return false;
+      }
     }
 
     try {
@@ -242,7 +326,17 @@ class StorageAdapter {
     }
     
     if (!this.storageReady) {
-      return false;
+      // Mode fallback avec localStorage
+      try {
+        const stored = localStorage.getItem('mailApp_outgoingMails');
+        const mails = stored ? JSON.parse(stored) : [];
+        const filteredMails = mails.filter((mail: any) => mail.id !== mailId);
+        localStorage.setItem('mailApp_outgoingMails', JSON.stringify(filteredMails));
+        return true;
+      } catch (error) {
+        console.error('Erreur lors de la suppression dans localStorage:', error);
+        return false;
+      }
     }
 
     try {
@@ -262,45 +356,101 @@ class StorageAdapter {
 
   // Exporte toutes les données
   async exportData(): Promise<boolean> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      return false;
-    }
-
     try {
-      const data = await fileSystemStorage.loadData();
-      if (!data) {
-        // Créer des données vides si aucune donnée n'existe
-        const emptyData: MailStorageData = {
+      let data: MailStorageData;
+      
+      if (this.storageReady) {
+        // Utiliser le stockage sur disque
+        const diskData = await fileSystemStorage.loadData();
+        data = diskData || {
           incomingMails: [],
           outgoingMails: [],
           version: '1.0.0',
           lastModified: new Date().toISOString()
         };
-        return await fileSystemStorage.exportData(emptyData);
+      } else {
+        // Utiliser le localStorage en fallback
+        const incomingStored = localStorage.getItem('mailApp_incomingMails');
+        const outgoingStored = localStorage.getItem('mailApp_outgoingMails');
+        
+        data = {
+          incomingMails: incomingStored ? JSON.parse(incomingStored) : [],
+          outgoingMails: outgoingStored ? JSON.parse(outgoingStored) : [],
+          version: '1.0.0',
+          lastModified: new Date().toISOString()
+        };
       }
 
-      return await fileSystemStorage.exportData(data);
+      // Export classique avec téléchargement direct si l'API File System n'est pas disponible
+      if (this.storageReady && fileSystemStorage.isSupported() && fileSystemStorage.isUsable()) {
+        return await fileSystemStorage.exportData(data);
+      } else {
+        // Fallback : téléchargement direct
+        this.downloadJSON(data, `courriers-export-${new Date().toISOString().split('T')[0]}.json`);
+        return true;
+      }
     } catch (error) {
       console.error('Erreur lors de l\'export:', error);
       return false;
     }
   }
 
+  // Méthode helper pour télécharger du JSON
+  private downloadJSON(data: any, filename: string): void {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // Importe des données
   async importData(): Promise<boolean> {
     try {
-      const data = await fileSystemStorage.importData();
-      if (!data) return false;
+      // Utiliser l'API File System si disponible et utilisable
+      if (this.storageReady && fileSystemStorage.isSupported() && fileSystemStorage.isUsable()) {
+        const data = await fileSystemStorage.importData();
+        if (!data) return false;
+        await fileSystemStorage.saveData(data);
+        return true;
+      } else {
+        // Fallback : input file classique
+        return new Promise((resolve) => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json';
+          input.onchange = async (e: Event) => {
+            const file = (e.target as HTMLInputElement).files?.[0];
+            if (!file) {
+              resolve(false);
+              return;
+            }
 
-      // Sauvegarder les données importées
-      await fileSystemStorage.saveData(data);
-      this.storageReady = true;
-
-      return true;
+            try {
+              const text = await file.text();
+              const data = JSON.parse(text) as MailStorageData;
+              
+              // Sauvegarder dans localStorage
+              if (data.incomingMails) {
+                localStorage.setItem('mailApp_incomingMails', JSON.stringify(data.incomingMails));
+              }
+              if (data.outgoingMails) {
+                localStorage.setItem('mailApp_outgoingMails', JSON.stringify(data.outgoingMails));
+              }
+              
+              resolve(true);
+            } catch (error) {
+              console.error('Erreur lors de l\'import:', error);
+              resolve(false);
+            }
+          };
+          input.click();
+        });
+      }
     } catch (error) {
       console.error('Erreur lors de l\'import:', error);
       return false;

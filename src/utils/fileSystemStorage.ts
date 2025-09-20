@@ -10,6 +10,18 @@ class FileSystemStorage {
     return 'showDirectoryPicker' in window && 'showSaveFilePicker' in window && 'showOpenFilePicker' in window;
   }
 
+  // Vérifie si File System Access API est utilisable (pas dans un iframe cross-origin)
+  isUsable(): boolean {
+    if (!this.isSupported()) return false;
+    
+    try {
+      // Vérifier si nous sommes dans un contexte sécurisé
+      return window.isSecureContext && window.self === window.top;
+    } catch {
+      return false;
+    }
+  }
+
   // Sélectionne un dossier pour le stockage
   async selectStorageDirectory(): Promise<boolean> {
     if (!this.isSupported()) {

@@ -17,6 +17,11 @@ const FileSystemManager: React.FC = () => {
     setIsSupported(storageAdapter.isFileSystemSupported());
     setIsUsingFileSystem(storageAdapter.isUsingFileSystem());
     setStorageLocation(storageAdapter.getStorageLocation());
+    
+    // Si l'API n'est pas utilisable mais supportée, on indique le mode localStorage
+    if (storageAdapter.isFileSystemSupported() && !storageAdapter.isUsingFileSystem()) {
+      setStorageLocation('Stockage temporaire (localStorage)');
+    }
   }, []);
 
   const handleSelectDirectory = async () => {
@@ -84,14 +89,24 @@ const FileSystemManager: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Votre navigateur ne supporte pas l'API File System Access. 
-              Cette fonctionnalité nécessite Chrome 86+ ou Edge 86+.
-              Les données sont stockées localement dans le navigateur.
-            </AlertDescription>
-          </Alert>
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {!isSupported ? (
+              <>
+                Votre navigateur ne supporte pas l'API File System Access. 
+                Cette fonctionnalité nécessite Chrome 86+ ou Edge 86+.
+                Les données sont stockées localement dans le navigateur.
+              </>
+            ) : (
+              <>
+                L'API File System Access n'est pas disponible dans cet environnement 
+                (iframe cross-origin). Les données sont stockées temporairement dans le navigateur.
+                Pour un stockage complet sur disque, utilisez l'application en mode standalone.
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
         </CardContent>
       </Card>
     );
@@ -134,7 +149,7 @@ const FileSystemManager: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Button
             onClick={handleSelectDirectory}
-            disabled={isLoading}
+            disabled={isLoading || !isSupported}
             className="flex items-center gap-2"
           >
             <FolderOpen className="h-4 w-4" />
