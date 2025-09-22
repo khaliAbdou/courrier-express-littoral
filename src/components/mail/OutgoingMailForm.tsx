@@ -2,13 +2,14 @@
 import React, { useState } from "react";
 import { MailMedium, ScannedDocument } from "@/types/mail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { AuditLogger } from '@/utils/auditLogger';
 import { saveOutgoingMailToLocalStorage } from "@/utils/outgoingMailStorage";
 import OutgoingMailFormFields from "./outgoing/OutgoingMailFormFields";
 import OutgoingMailFormActions from "./outgoing/OutgoingMailFormActions";
 import FileUploadSection from "@/components/forms/FileUploadSection";
-import { Send } from "lucide-react";
+import { Send, FileImage, X } from "lucide-react";
 
 interface OutgoingMailFormProps {
   onMailSaved?: () => void;
@@ -30,6 +31,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -120,11 +122,32 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
           />
           
           {/* Documents scannés */}
-          <FileUploadSection
-            documents={formData.scannedDocuments}
-            onDocumentsChange={handleDocumentsChange}
-            disabled={isSubmitting}
-          />
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDocumentUpload(!showDocumentUpload)}
+              className="flex items-center gap-2"
+              disabled={isSubmitting}
+            >
+              <FileImage className="h-4 w-4" />
+              {showDocumentUpload ? 'Masquer' : 'Associer'} des documents scannés
+              {showDocumentUpload && <X className="h-4 w-4" />}
+            </Button>
+            {formData.scannedDocuments.length > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {formData.scannedDocuments.length} document(s) ajouté(s)
+              </span>
+            )}
+          </div>
+
+          {showDocumentUpload && (
+            <FileUploadSection
+              documents={formData.scannedDocuments}
+              onDocumentsChange={handleDocumentsChange}
+              disabled={isSubmitting}
+            />
+          )}
           
           <OutgoingMailFormActions
             onReset={resetForm} 

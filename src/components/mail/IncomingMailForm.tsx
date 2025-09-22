@@ -16,7 +16,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, FileImage, X } from "lucide-react";
 import { toast } from "sonner";
 import { AuditLogger } from '@/utils/auditLogger';
 import { saveIncomingMailToLocalStorage } from "@/utils/incomingMailStorage";
@@ -43,6 +43,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -341,11 +342,32 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
           </div>
 
           {/* Documents scannés */}
-          <FileUploadSection
-            documents={formData.scannedDocuments}
-            onDocumentsChange={handleDocumentsChange}
-            disabled={isSubmitting}
-          />
+          <div className="flex items-center justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowDocumentUpload(!showDocumentUpload)}
+              className="flex items-center gap-2"
+              disabled={isSubmitting}
+            >
+              <FileImage className="h-4 w-4" />
+              {showDocumentUpload ? 'Masquer' : 'Associer'} des documents scannés
+              {showDocumentUpload && <X className="h-4 w-4" />}
+            </Button>
+            {formData.scannedDocuments.length > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {formData.scannedDocuments.length} document(s) ajouté(s)
+              </span>
+            )}
+          </div>
+
+          {showDocumentUpload && (
+            <FileUploadSection
+              documents={formData.scannedDocuments}
+              onDocumentsChange={handleDocumentsChange}
+              disabled={isSubmitting}
+            />
+          )}
 
           <CardFooter className="flex justify-end space-x-2 px-0 pb-0">
             <Button
