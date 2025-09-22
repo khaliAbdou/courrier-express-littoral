@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,10 +14,11 @@ import { licenseManager } from '@/utils/licenseManager';
 import { toast } from 'sonner';
 
 interface LicenseCheckerProps {
+  children?: ReactNode;
   onLicenseValid?: (isValid: boolean) => void;
 }
 
-const LicenseChecker: React.FC<LicenseCheckerProps> = ({ onLicenseValid }) => {
+const LicenseChecker: React.FC<LicenseCheckerProps> = ({ children, onLicenseValid }) => {
   const [licenseData, setLicenseData] = useState<any>(null);
   const [daysRemaining, setDaysRemaining] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -144,27 +145,37 @@ const LicenseChecker: React.FC<LicenseCheckerProps> = ({ onLicenseValid }) => {
     );
   }
 
-  // Widget de statut compact pour la navbar ou sidebar
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <Shield className={`h-4 w-4 ${getStatusColor()}`} />
-      <span className={getStatusColor()}>
-        {licenseData?.status === 'active' && 'Licence Active'}
-        {licenseData?.status === 'trial' && `Essai: ${daysRemaining}j`}
-        {licenseData?.status === 'expired' && 'Expiré'}
-        {!licenseData && 'Non configuré'}
-      </span>
-      
-      {licenseData?.status === 'trial' && (
-        <div className="w-12 h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className={`h-full transition-all duration-300 ${getProgressColor()}`}
-            style={{ width: `${getProgressValue()}%` }}
-          />
-        </div>
-      )}
-    </div>
-  );
+  // Si pas de children, mode widget compact
+  if (!children) {
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <Shield className={`h-4 w-4 ${getStatusColor()}`} />
+        <span className={getStatusColor()}>
+          {licenseData?.status === 'active' && 'Licence Active'}
+          {licenseData?.status === 'trial' && `Essai: ${daysRemaining}j`}
+          {licenseData?.status === 'expired' && 'Expiré'}
+          {!licenseData && 'Non configuré'}
+        </span>
+        
+        {licenseData?.status === 'trial' && (
+          <div className="w-12 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-300 ${getProgressColor()}`}
+              style={{ width: `${getProgressValue()}%` }}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Mode wrapper avec children - afficher l'application si licence valide ou en essai
+  if (licenseData?.status === 'active' || licenseData?.status === 'trial') {
+    return <>{children}</>;
+  }
+
+  // Afficher uniquement le modal si la licence est expirée
+  return null;
 };
 
 export default LicenseChecker;

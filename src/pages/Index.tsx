@@ -11,9 +11,11 @@ import OverdueAlerts from "@/components/alerts/OverdueAlerts";
 import LicenseAlert from "@/components/alerts/LicenseAlert";
 import FileSystemManager from "@/components/storage/FileSystemManager";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useAppConfig } from "@/hooks/useAppConfig";
 
 const Index = () => {
   const { stats, overdueMails } = useDashboardData();
+  const { config, isLoading } = useAppConfig();
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -21,15 +23,15 @@ const Index = () => {
       <div className="page-container flex-1">
         <div className="text-center mb-8">
           <img 
-            src="/lovable-uploads/b5287aa5-72f8-436b-95be-6d1a0e22b700.png" 
-            alt="ANOR Logo" 
+            src={config.customLogo || config.logoPath} 
+            alt="Logo du service" 
             className="mx-auto mb-6 h-24 w-auto"
           />
           <h1 className="text-4xl font-bold text-agency-blue mb-4">
-            Courrier Express Littoral
+            {config.serviceName}
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Système de gestion intelligente des courriers pour l'Antenne du Littoral de l'ANOR
+            Système de gestion intelligente des courriers et dossiers qualité
           </p>
         </div>
 
