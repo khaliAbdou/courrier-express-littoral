@@ -1,14 +1,18 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings as SettingsIcon, User, HardDrive } from 'lucide-react';
+import { Settings as SettingsIcon, User, HardDrive, FileImage } from 'lucide-react';
+import Navbar from '@/components/layout/Navbar';
 import AppConfiguration from '@/components/config/AppConfiguration';
 import FileSystemManager from '@/components/storage/FileSystemManager';
 import SystemDiagnostic from '@/components/diagnostic/SystemDiagnostic';
+import ScannedDocumentManager from '@/components/scanned/ScannedDocumentManager';
 
 const Settings: React.FC = () => {
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <>
+      <Navbar />
+      <div className="container mx-auto p-6 max-w-6xl">
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">
           <SettingsIcon className="h-8 w-8 text-primary" />
@@ -20,7 +24,7 @@ const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Configuration
@@ -32,6 +36,10 @@ const Settings: React.FC = () => {
           <TabsTrigger value="diagnostic" className="flex items-center gap-2">
             <SettingsIcon className="h-4 w-4" />
             Diagnostic
+          </TabsTrigger>
+          <TabsTrigger value="scanned" className="flex items-center gap-2">
+            <FileImage className="h-4 w-4" />
+            Documents Scannés
           </TabsTrigger>
         </TabsList>
 
@@ -76,8 +84,23 @@ const Settings: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="scanned" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileImage className="h-5 w-5" />
+                Gestion des Documents Scannés
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScannedDocumentManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 };
 
