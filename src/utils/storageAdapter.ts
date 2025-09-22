@@ -11,18 +11,19 @@ class StorageAdapter {
   }
 
   private async init() {
-    // Application Electron - File System Access API requis
+    // Application Electron - Vérifier la disponibilité de l'API sans forcer l'activation
     if (!fileSystemStorage.isSupported()) {
-      throw new Error('Cette application nécessite un navigateur compatible avec File System Access API (Chrome/Edge 86+)');
+      console.error('Cette application nécessite un navigateur compatible avec File System Access API (Chrome/Edge 86+)');
+      return;
     }
     
     if (!fileSystemStorage.isUsable()) {
       console.warn('File System Access API détecté mais non utilisable dans ce contexte');
-      // Tenter quand même l'activation pour Electron
+      return;
     }
     
-    // Tenter d'activer le stockage filesystem automatiquement
-    await this.enableFileSystemStorage();
+    // Ne pas tenter d'activer automatiquement - laisser l'utilisateur choisir
+    console.log('Application prête - Stockage filesystem disponible');
   }
 
   async enableFileSystemStorage(): Promise<boolean> {
@@ -34,10 +35,12 @@ class StorageAdapter {
         console.log('Stockage filesystem activé avec succès');
         return true;
       }
-      throw new Error('Impossible d\'activer le stockage filesystem');
+      console.warn('Utilisateur a annulé la sélection du dossier');
+      return false;
     } catch (error) {
       console.error('Erreur activation stockage filesystem:', error);
-      throw new Error('Le stockage sur disque dur est requis pour cette application');
+      // Ne pas lancer d'erreur - permettre à l'utilisateur de réessayer
+      return false;
     }
   }
 

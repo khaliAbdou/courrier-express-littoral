@@ -33,8 +33,10 @@ class FileSystemStorage {
     }
 
     try {
+      // Demander à l'utilisateur de sélectionner un dossier
       this.directoryHandle = await window.showDirectoryPicker!({
-        mode: 'readwrite'
+        mode: 'readwrite',
+        startIn: 'documents' // Suggérer le dossier Documents
       });
       
       // Sauvegarder la référence du dossier dans localStorage
@@ -43,10 +45,15 @@ class FileSystemStorage {
         hasHandle: true
       }));
 
+      console.log(`Dossier sélectionné: ${this.directoryHandle.name}`);
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.log('Sélection de dossier annulée par l\'utilisateur');
+        return false;
+      }
       console.error('Erreur lors de la sélection du dossier:', error);
-      return false;
+      throw error;
     }
   }
 

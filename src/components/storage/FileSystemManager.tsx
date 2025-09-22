@@ -22,10 +22,14 @@ const FileSystemManager: React.FC = () => {
   const handleSelectDirectory = async () => {
     setIsLoading(true);
     try {
-      await storageAdapter.enableFileSystemStorage();
-      setIsUsingFileSystem(true);
-      setStorageLocation(storageAdapter.getStorageLocation());
-      toast.success('Dossier de stockage configuré avec succès !');
+      const success = await storageAdapter.enableFileSystemStorage();
+      if (success) {
+        setIsUsingFileSystem(true);
+        setStorageLocation(storageAdapter.getStorageLocation());
+        toast.success('Dossier de stockage configuré avec succès !');
+      } else {
+        toast.error('Sélection du dossier annulée ou impossible');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Erreur lors de la configuration du stockage');
       console.error(error);
