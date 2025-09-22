@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { MailMedium, MailType } from "@/types/mail";
+import { MailMedium, MailType, ScannedDocument } from "@/types/mail";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import { CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AuditLogger } from '@/utils/auditLogger';
 import { saveIncomingMailToLocalStorage } from "@/utils/incomingMailStorage";
+import FileUploadSection from "@/components/forms/FileUploadSection";
 
 interface IncomingMailFormProps {
   onMailSaved?: () => void;
@@ -38,6 +39,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
     senderAddress: "",
     recipientService: "",
     observations: "",
+    scannedDocuments: [] as ScannedDocument[],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +55,10 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
 
   const handleDateChange = (name: string, date: Date | undefined) => {
     setFormData((prev) => ({ ...prev, [name]: date }));
+  };
+
+  const handleDocumentsChange = (documents: ScannedDocument[]) => {
+    setFormData((prev) => ({ ...prev, scannedDocuments: documents }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -95,6 +101,7 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
         senderAddress: "",
         recipientService: "",
         observations: "",
+        scannedDocuments: [],
       });
     } catch (error) {
       toast.error("Erreur lors de l'enregistrement du courrier.");
@@ -333,25 +340,33 @@ const IncomingMailForm: React.FC<IncomingMailFormProps> = ({ onMailSaved }) => {
             />
           </div>
 
+          {/* Documents scannés */}
+          <FileUploadSection
+            documents={formData.scannedDocuments}
+            onDocumentsChange={handleDocumentsChange}
+            disabled={isSubmitting}
+          />
+
           <CardFooter className="flex justify-end space-x-2 px-0 pb-0">
             <Button
               variant="outline"
               type="button"
               disabled={isSubmitting}
               onClick={() =>
-                setFormData({
-                  chronoNumber: "",
-                  date: new Date(),
-                  issueDate: undefined,
-                  medium: "" as MailMedium,
-                  subject: "",
-                  mailType: "" as MailType,
-                  responseDate: undefined,
-                  senderName: "",
-                  senderAddress: "",
-                  recipientService: "",
-                  observations: "",
-                })
+              setFormData({
+                chronoNumber: "",
+                date: new Date(),
+                issueDate: undefined,
+                medium: "" as MailMedium,
+                subject: "",
+                mailType: "" as MailType,
+                responseDate: undefined,
+                senderName: "",
+                senderAddress: "",
+                recipientService: "",
+                observations: "",
+                scannedDocuments: [],
+              })
               }
             >
               Réinitialiser

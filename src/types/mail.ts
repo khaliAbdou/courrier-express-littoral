@@ -16,6 +16,17 @@ export interface BaseMail {
   observations?: string;
   documentLink?: string;
   status: MailStatus;
+  scannedDocuments?: ScannedDocument[];
+}
+
+export interface ScannedDocument {
+  id: string;
+  name: string;
+  type: 'pdf' | 'image';
+  size: number;
+  uploadDate: Date;
+  description?: string;
+  file: File;
 }
 
 // Incoming mail specific properties

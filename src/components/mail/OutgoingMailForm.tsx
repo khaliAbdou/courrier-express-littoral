@@ -1,12 +1,13 @@
 
 import React, { useState } from "react";
-import { MailMedium } from "@/types/mail";
+import { MailMedium, ScannedDocument } from "@/types/mail";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { AuditLogger } from '@/utils/auditLogger';
 import { saveOutgoingMailToLocalStorage } from "@/utils/outgoingMailStorage";
 import OutgoingMailFormFields from "./outgoing/OutgoingMailFormFields";
 import OutgoingMailFormActions from "./outgoing/OutgoingMailFormActions";
+import FileUploadSection from "@/components/forms/FileUploadSection";
 import { Send } from "lucide-react";
 
 interface OutgoingMailFormProps {
@@ -25,6 +26,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     service: "",
     writer: "",
     observations: "",
+    scannedDocuments: [] as ScannedDocument[],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +50,10 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
     setFormData((prev) => ({ ...prev, issueDate: date }));
   };
 
+  const handleDocumentsChange = (documents: ScannedDocument[]) => {
+    setFormData((prev) => ({ ...prev, scannedDocuments: documents }));
+  };
+
   const resetForm = () => {
     setFormData({
       chronoNumber: "",
@@ -60,6 +66,7 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
       service: "",
       writer: "",
       observations: "",
+      scannedDocuments: [],
     });
   };
 
@@ -111,7 +118,15 @@ const OutgoingMailForm: React.FC<OutgoingMailFormProps> = ({ onMailSaved }) => {
             onIssueDateChange={handleIssueDateChange}
             disabled={isSubmitting}
           />
-          <OutgoingMailFormActions 
+          
+          {/* Documents scannés */}
+          <FileUploadSection
+            documents={formData.scannedDocuments}
+            onDocumentsChange={handleDocumentsChange}
+            disabled={isSubmitting}
+          />
+          
+          <OutgoingMailFormActions
             onReset={resetForm} 
             isSubmitting={isSubmitting}
           />
