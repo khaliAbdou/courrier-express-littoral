@@ -16,7 +16,23 @@ class StorageAdapter {
     if (fileSystemStorage.isUsable()) {
       await this.enableFileSystemStorage();
     } else {
-      console.warn('Stockage filesystem non disponible');
+      console.warn('Stockage filesystem non disponible, utilisation du localStorage comme fallback');
+      // Initialiser le fallback localStorage
+      this.initLocalStorageFallback();
+    }
+  }
+
+  private initLocalStorageFallback() {
+    // Vérifier si des données existent déjà dans localStorage
+    const existingData = localStorage.getItem('mailAppData');
+    if (!existingData) {
+      const initialData: MailStorageData = {
+        incomingMails: [],
+        outgoingMails: [],
+        version: '1.0.0',
+        lastModified: new Date().toISOString()
+      };
+      localStorage.setItem('mailAppData', JSON.stringify(initialData));
     }
   }
 
@@ -50,23 +66,57 @@ class StorageAdapter {
     }, 5 * 60 * 1000); // 5 minutes
   }
 
+  // Méthodes de stockage fallback pour localStorage
+  private getLocalStorageData(): MailStorageData {
+    try {
+      const data = localStorage.getItem('mailAppData');
+      if (data) {
+        return JSON.parse(data);
+      }
+    } catch (error) {
+      console.error('Erreur lecture localStorage:', error);
+    }
+    
+    return {
+      incomingMails: [],
+      outgoingMails: [],
+      version: '1.0.0',
+      lastModified: new Date().toISOString()
+    };
+  }
+
+  private saveLocalStorageData(data: MailStorageData): void {
+    try {
+      localStorage.setItem('mailAppData', JSON.stringify(data));
+    } catch (error) {
+      console.error('Erreur sauvegarde localStorage:', error);
+      throw new Error('Erreur lors de la sauvegarde en localStorage');
+    }
+  }
+
   // Sauvegarde un courrier entrant
   async saveIncomingMail(mail: any): Promise<void> {
-    if (!this.isFileSystemEnabled) {
-      throw new Error('Stockage filesystem requis');
-    }
-
     try {
-      const data = await fileSystemStorage.loadData() || { 
-        incomingMails: [], 
-        outgoingMails: [], 
-        version: '1.0.0', 
-        lastModified: new Date().toISOString() 
-      };
+      let data: MailStorageData;
       
-      data.incomingMails.push(mail);
-      data.lastModified = new Date().toISOString();
-      await fileSystemStorage.saveData(data);
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData() || { 
+          incomingMails: [], 
+          outgoingMails: [], 
+          version: '1.0.0', 
+          lastModified: new Date().toISOString() 
+        };
+        
+        data.incomingMails.push(mail);
+        data.lastModified = new Date().toISOString();
+        await fileSystemStorage.saveData(data);
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
+        data.incomingMails.push(mail);
+        data.lastModified = new Date().toISOString();
+        this.saveLocalStorageData(data);
+      }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du courrier entrant:', error);
       throw error;
@@ -75,21 +125,27 @@ class StorageAdapter {
 
   // Sauvegarde un courrier sortant
   async saveOutgoingMail(mail: any): Promise<void> {
-    if (!this.isFileSystemEnabled) {
-      throw new Error('Stockage filesystem requis');
-    }
-
     try {
-      const data = await fileSystemStorage.loadData() || { 
-        incomingMails: [], 
-        outgoingMails: [], 
-        version: '1.0.0', 
-        lastModified: new Date().toISOString() 
-      };
+      let data: MailStorageData;
       
-      data.outgoingMails.push(mail);
-      data.lastModified = new Date().toISOString();
-      await fileSystemStorage.saveData(data);
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData() || { 
+          incomingMails: [], 
+          outgoingMails: [], 
+          version: '1.0.0', 
+          lastModified: new Date().toISOString() 
+        };
+        
+        data.outgoingMails.push(mail);
+        data.lastModified = new Date().toISOString();
+        await fileSystemStorage.saveData(data);
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
+        data.outgoingMails.push(mail);
+        data.lastModified = new Date().toISOString();
+        this.saveLocalStorageData(data);
+      }
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du courrier sortant:', error);
       throw error;
@@ -98,18 +154,28 @@ class StorageAdapter {
 
   // Met à jour un courrier entrant
   async updateIncomingMail(mailId: string, updatedMail: any): Promise<boolean> {
-    if (!this.isFileSystemEnabled) {
-      throw new Error('Stockage filesystem requis');
-    }
-
     try {
-      const data = await fileSystemStorage.loadData();
-      if (data) {
+      let data: MailStorageData;
+      
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData();
+        if (data) {
+          const index = data.incomingMails.findIndex(mail => mail.id === mailId);
+          if (index !== -1) {
+            data.incomingMails[index] = { ...data.incomingMails[index], ...updatedMail };
+            data.lastModified = new Date().toISOString();
+            await fileSystemStorage.saveData(data);
+            return true;
+          }
+        }
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
         const index = data.incomingMails.findIndex(mail => mail.id === mailId);
         if (index !== -1) {
           data.incomingMails[index] = { ...data.incomingMails[index], ...updatedMail };
           data.lastModified = new Date().toISOString();
-          await fileSystemStorage.saveData(data);
+          this.saveLocalStorageData(data);
           return true;
         }
       }
@@ -122,18 +188,28 @@ class StorageAdapter {
 
   // Met à jour un courrier sortant
   async updateOutgoingMail(mailId: string, updatedMail: any): Promise<boolean> {
-    if (!this.isFileSystemEnabled) {
-      throw new Error('Stockage filesystem requis');
-    }
-
     try {
-      const data = await fileSystemStorage.loadData();
-      if (data) {
+      let data: MailStorageData;
+      
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData();
+        if (data) {
+          const index = data.outgoingMails.findIndex(mail => mail.id === mailId);
+          if (index !== -1) {
+            data.outgoingMails[index] = { ...data.outgoingMails[index], ...updatedMail };
+            data.lastModified = new Date().toISOString();
+            await fileSystemStorage.saveData(data);
+            return true;
+          }
+        }
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
         const index = data.outgoingMails.findIndex(mail => mail.id === mailId);
         if (index !== -1) {
           data.outgoingMails[index] = { ...data.outgoingMails[index], ...updatedMail };
           data.lastModified = new Date().toISOString();
-          await fileSystemStorage.saveData(data);
+          this.saveLocalStorageData(data);
           return true;
         }
       }
@@ -146,13 +222,17 @@ class StorageAdapter {
 
   // Récupère tous les courriers entrants
   async getAllIncomingMails(): Promise<IncomingMail[]> {
-    if (!this.isFileSystemEnabled) {
-      return [];
-    }
-
     try {
-      const data = await fileSystemStorage.loadData();
-      const mails = data?.incomingMails || [];
+      let data: MailStorageData;
+      
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData() || { incomingMails: [], outgoingMails: [], version: '1.0.0', lastModified: new Date().toISOString() };
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
+      }
+      
+      const mails = data.incomingMails || [];
       
       return mails.map((mail: any) => ({
         ...mail,
@@ -168,13 +248,17 @@ class StorageAdapter {
 
   // Récupère tous les courriers sortants
   async getAllOutgoingMails(): Promise<OutgoingMail[]> {
-    if (!this.isFileSystemEnabled) {
-      return [];
-    }
-
     try {
-      const data = await fileSystemStorage.loadData();
-      const mails = data?.outgoingMails || [];
+      let data: MailStorageData;
+      
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData() || { incomingMails: [], outgoingMails: [], version: '1.0.0', lastModified: new Date().toISOString() };
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
+      }
+      
+      const mails = data.outgoingMails || [];
       
       return mails.map((mail: any) => ({
         ...mail,
@@ -189,16 +273,23 @@ class StorageAdapter {
 
   // Supprime un courrier entrant
   async deleteIncomingMail(mailId: string): Promise<boolean> {
-    if (!this.isFileSystemEnabled) {
-      throw new Error('Stockage filesystem requis');
-    }
-
     try {
-      const data = await fileSystemStorage.loadData();
-      if (data) {
+      let data: MailStorageData;
+      
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData();
+        if (data) {
+          data.incomingMails = data.incomingMails.filter(mail => mail.id !== mailId);
+          data.lastModified = new Date().toISOString();
+          await fileSystemStorage.saveData(data);
+          return true;
+        }
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
         data.incomingMails = data.incomingMails.filter(mail => mail.id !== mailId);
         data.lastModified = new Date().toISOString();
-        await fileSystemStorage.saveData(data);
+        this.saveLocalStorageData(data);
         return true;
       }
       return false;
@@ -210,16 +301,23 @@ class StorageAdapter {
 
   // Supprime un courrier sortant
   async deleteOutgoingMail(mailId: string): Promise<boolean> {
-    if (!this.isFileSystemEnabled) {
-      throw new Error('Stockage filesystem requis');
-    }
-
     try {
-      const data = await fileSystemStorage.loadData();
-      if (data) {
+      let data: MailStorageData;
+      
+      if (this.isFileSystemEnabled) {
+        data = await fileSystemStorage.loadData();
+        if (data) {
+          data.outgoingMails = data.outgoingMails.filter(mail => mail.id !== mailId);
+          data.lastModified = new Date().toISOString();
+          await fileSystemStorage.saveData(data);
+          return true;
+        }
+      } else {
+        // Fallback localStorage
+        data = this.getLocalStorageData();
         data.outgoingMails = data.outgoingMails.filter(mail => mail.id !== mailId);
         data.lastModified = new Date().toISOString();
-        await fileSystemStorage.saveData(data);
+        this.saveLocalStorageData(data);
         return true;
       }
       return false;
@@ -244,13 +342,8 @@ class StorageAdapter {
           lastModified: new Date().toISOString()
         };
       } else {
-        // Aucune donnée disponible
-        data = {
-          incomingMails: [],
-          outgoingMails: [],
-          version: '1.0.0',
-          lastModified: new Date().toISOString()
-        };
+        // Utiliser localStorage comme fallback
+        data = this.getLocalStorageData();
       }
 
       // Export avec File System API si disponible
@@ -343,7 +436,7 @@ class StorageAdapter {
 
   // Vérifie si le stockage est prêt
   isStorageReady(): boolean {
-    return this.isFileSystemEnabled;
+    return this.isFileSystemEnabled || typeof(Storage) !== "undefined";
   }
 }
 
