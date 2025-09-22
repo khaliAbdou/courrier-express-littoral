@@ -8,7 +8,6 @@ import MailTypeChart from "@/components/dashboard/MailTypeChart";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import OverdueMail from "@/components/dashboard/OverdueMail";
 import OverdueAlerts from "@/components/alerts/OverdueAlerts";
-import LicenseAlert from "@/components/alerts/LicenseAlert";
 import FileSystemManager from "@/components/storage/FileSystemManager";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useAppConfig } from "@/hooks/useAppConfig";
@@ -37,7 +36,6 @@ const Index = () => {
 
         {/* Alertes système */}
         <div className="space-y-4 mb-8">
-          <LicenseAlert />
           <OverdueAlerts />
         </div>
 

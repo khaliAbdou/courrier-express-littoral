@@ -9,7 +9,6 @@ import OutgoingMail from "./pages/OutgoingMail";
 import Statistics from "./pages/Statistics";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import LicenseChecker from "./components/license/LicenseChecker";
 
 const queryClient = new QueryClient();
 
@@ -17,18 +16,16 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Sonner />
-      <LicenseChecker>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/incoming" element={<IncomingMail />} />
-            <Route path="/outgoing" element={<OutgoingMail />} />
-            <Route path="/statistics" element={<Statistics />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </LicenseChecker>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/incoming" element={<IncomingMail />} />
+          <Route path="/outgoing" element={<OutgoingMail />} />
+          <Route path="/statistics" element={<Statistics />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
 );

@@ -3,16 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
 import { 
   Settings, 
-  Building, 
-  Users, 
   ImageIcon, 
-  Plus, 
-  Trash2, 
   Save,
   Info
 } from 'lucide-react';
@@ -24,8 +18,6 @@ const AppConfiguration: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [serviceName, setServiceName] = useState('');
-  const [selectedBureau, setSelectedBureau] = useState<string>('');
-  const [newEmployee, setNewEmployee] = useState('');
 
   useEffect(() => {
     loadConfiguration();
@@ -94,40 +86,6 @@ const AppConfiguration: React.FC = () => {
     }
   };
 
-  const addEmployee = async () => {
-    if (!newEmployee.trim() || !selectedBureau) {
-      toast.error('Veuillez sélectionner un bureau et saisir un nom');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await configManager.addEmployee(selectedBureau, newEmployee.trim());
-      const updatedConfig = await configManager.loadConfig();
-      setConfig(updatedConfig);
-      setNewEmployee('');
-      toast.success('Employé ajouté');
-    } catch (error) {
-      toast.error('Erreur lors de l\'ajout');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const removeEmployee = async (bureauKey: string, employeeName: string) => {
-    setIsSaving(true);
-    try {
-      await configManager.removeEmployee(bureauKey, employeeName);
-      const updatedConfig = await configManager.loadConfig();
-      setConfig(updatedConfig);
-      toast.success('Employé supprimé');
-    } catch (error) {
-      toast.error('Erreur lors de la suppression');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -176,8 +134,6 @@ const AppConfiguration: React.FC = () => {
             </div>
           </div>
 
-          <Separator />
-
           <div className="space-y-2">
             <Label>Logo Personnalisé</Label>
             <div className="flex items-center gap-4">
@@ -215,89 +171,6 @@ const AppConfiguration: React.FC = () => {
                 </p>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Gestion des bureaux et employés */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building className="h-5 w-5" />
-            Bureaux et Employés
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Ajout d'employé */}
-          <div className="space-y-3">
-            <Label>Ajouter un Employé</Label>
-            <div className="flex gap-2">
-              <select
-                value={selectedBureau}
-                onChange={(e) => setSelectedBureau(e.target.value)}
-                className="px-3 py-2 border rounded-md"
-              >
-                <option value="">Sélectionner un bureau</option>
-                {Object.entries(config.bureaus).map(([key, bureau]) => (
-                  <option key={key} value={key}>{bureau.name}</option>
-                ))}
-              </select>
-              
-              <Input
-                value={newEmployee}
-                onChange={(e) => setNewEmployee(e.target.value)}
-                placeholder="Nom de l'employé"
-                onKeyDown={(e) => e.key === 'Enter' && addEmployee()}
-              />
-              
-              <Button 
-                onClick={addEmployee}
-                disabled={isSaving || !newEmployee.trim() || !selectedBureau}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Liste des bureaux et employés */}
-          <div className="space-y-4">
-            {Object.entries(config.bureaus).map(([bureauKey, bureau]) => (
-              <div key={bureauKey} className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <h4 className="font-semibold">{bureau.name}</h4>
-                  <Badge variant="secondary">{bureau.employees.length} employé{bureau.employees.length > 1 ? 's' : ''}</Badge>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 ml-6">
-                  {bureau.employees.map((employee, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-2 bg-muted rounded-lg"
-                    >
-                      <span className="text-sm">{employee}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeEmployee(bureauKey, employee)}
-                        disabled={isSaving}
-                        className="h-6 w-6 p-0 hover:bg-red-100"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  
-                  {bureau.employees.length === 0 && (
-                    <p className="text-sm text-muted-foreground italic">
-                      Aucun employé assigné
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
           </div>
         </CardContent>
       </Card>

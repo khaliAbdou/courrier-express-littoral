@@ -2,7 +2,6 @@ import { IncomingMail, OutgoingMail } from '@/types/mail';
 import { MailStorageData } from '@/types/fileSystemAccess';
 import { fileSystemStorage } from './fileSystemStorage';
 import { diskStorage } from './diskStorage';
-import { licenseManager } from './licenseManager';
 
 class StorageAdapter {
   private isFileSystemEnabled = false;
@@ -13,16 +12,6 @@ class StorageAdapter {
   }
 
   private async init() {
-    // Vérification de la licence avant initialisation
-    try {
-      const licenseCheck = await licenseManager.checkLicenseStatus();
-      if (!licenseCheck.isValid) {
-        console.warn('Licence expirée. Fonctionnement limité.');
-      }
-    } catch (error) {
-      console.warn('Vérification licence ignorée en développement:', error);
-    }
-
     // Stockage filesystem par défaut pour applications desktop
     if (fileSystemStorage.isUsable()) {
       await this.enableFileSystemStorage();
@@ -33,16 +22,6 @@ class StorageAdapter {
 
   async enableFileSystemStorage(): Promise<boolean> {
     try {
-      // Vérifier la licence avant activation
-      try {
-        const licenseCheck = await licenseManager.checkLicenseStatus();
-        if (!licenseCheck.isValid) {
-          console.warn('Licence requise pour utiliser cette application.');
-        }
-      } catch (error) {
-        console.warn('Vérification licence ignorée en développement:', error);
-      }
-
       const success = await fileSystemStorage.requestAccess();
       if (success) {
         this.isFileSystemEnabled = true;

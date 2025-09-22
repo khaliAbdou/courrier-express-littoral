@@ -1,14 +1,12 @@
 // Utilitaires pour le déploiement et la distribution
 
 import { electronBridge } from './electronBridge';
-import { licenseManager } from './licenseManager';
 import { configManager } from './configManager';
 
 interface DeploymentInfo {
   platform: string;
   isElectron: boolean;
   storageMode: 'electron' | 'filesystem' | 'fallback';
-  licenseStatus: string;
   appVersion: string;
 }
 
@@ -17,13 +15,10 @@ class DeploymentHelpers {
   // Obtient les informations de déploiement
   async getDeploymentInfo(): Promise<DeploymentInfo> {
     try {
-      const licenseCheck = await licenseManager.checkLicenseStatus();
-      
       return {
         platform: electronBridge.getPlatform(),
         isElectron: electronBridge.isElectron(),
         storageMode: electronBridge.getOptimalStorageMode(),
-        licenseStatus: licenseCheck.license?.status || 'unknown',
         appVersion: this.getAppVersion()
       };
     } catch (error) {
@@ -32,7 +27,6 @@ class DeploymentHelpers {
         platform: 'unknown',
         isElectron: false,
         storageMode: 'fallback',
-        licenseStatus: 'error',
         appVersion: '1.0.0'
       };
     }
@@ -102,7 +96,6 @@ class DeploymentHelpers {
     report += `Plateforme: ${deploymentInfo.platform}\n`;
     report += `Environnement: ${deploymentInfo.isElectron ? 'Electron' : 'Navigateur'}\n`;
     report += `Mode stockage: ${deploymentInfo.storageMode}\n`;
-    report += `Licence: ${deploymentInfo.licenseStatus}\n`;
     report += `Date: ${new Date().toISOString()}\n\n`;
     
     // Compatibilité
@@ -138,11 +131,6 @@ class DeploymentHelpers {
       report += '\n=== CONFIGURATION UTILISATEUR ===\n';
       report += `Service: ${config.serviceName}\n`;
       report += `Logo personnalisé: ${config.customLogo ? 'OUI' : 'NON'}\n`;
-      report += `Bureaux configurés: ${Object.keys(config.bureaus).length}\n`;
-      
-      const totalEmployees = Object.values(config.bureaus)
-        .reduce((total, bureau) => total + bureau.employees.length, 0);
-      report += `Total employés: ${totalEmployees}\n`;
     } catch (error) {
       report += '\n=== ERREUR CONFIGURATION ===\n';
       report += `Impossible de charger la configuration: ${error}\n`;
@@ -189,26 +177,6 @@ class DeploymentHelpers {
     checklist: { item: string; status: 'ok' | 'warning' | 'error'; message?: string }[];
   }> {
     const checklist: { item: string; status: 'ok' | 'warning' | 'error'; message?: string }[] = [];
-    
-    // Vérifier la licence
-    try {
-      const licenseCheck = await licenseManager.checkLicenseStatus();
-      if (licenseCheck.isValid) {
-        checklist.push({ item: 'Licence', status: 'ok' });
-      } else {
-        checklist.push({ 
-          item: 'Licence', 
-          status: 'error', 
-          message: 'Licence invalide ou expirée' 
-        });
-      }
-    } catch {
-      checklist.push({ 
-        item: 'Licence', 
-        status: 'warning', 
-        message: 'Impossible de vérifier la licence' 
-      });
-    }
     
     // Vérifier la configuration
     try {

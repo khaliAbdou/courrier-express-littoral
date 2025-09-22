@@ -39,7 +39,6 @@ export const useAppConfig = () => {
     serviceName: 'Service Technique - Antenne du Littoral',
     logoPath: '/lovable-uploads/b5287aa5-72f8-436b-95be-6d1a0e22b700.png',
     customLogo: null,
-    bureaus: {},
     defaultSettings: {
       theme: 'light' as const,
       language: 'fr' as const,

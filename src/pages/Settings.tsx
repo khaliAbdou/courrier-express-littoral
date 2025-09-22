@@ -1,9 +1,8 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings as SettingsIcon, User, Shield, HardDrive } from 'lucide-react';
+import { Settings as SettingsIcon, User, HardDrive } from 'lucide-react';
 import AppConfiguration from '@/components/config/AppConfiguration';
-import LicenseManagerComponent from '@/components/license/LicenseManager';
 import FileSystemManager from '@/components/storage/FileSystemManager';
 import SystemDiagnostic from '@/components/diagnostic/SystemDiagnostic';
 
@@ -21,14 +20,10 @@ const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Configuration
-          </TabsTrigger>
-          <TabsTrigger value="license" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Licence
           </TabsTrigger>
           <TabsTrigger value="storage" className="flex items-center gap-2">
             <HardDrive className="h-4 w-4" />
@@ -50,20 +45,6 @@ const Settings: React.FC = () => {
             </CardHeader>
             <CardContent>
               <AppConfiguration />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="license" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Gestion des Licences
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LicenseManagerComponent />
             </CardContent>
           </Card>
         </TabsContent>
