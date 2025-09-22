@@ -12,9 +12,10 @@ class TauriStorageAdapter {
   }
 
   private async init() {
-    // Application Tauri - Vérifier la disponibilité de l'API
+    // En mode développement, Tauri n'est pas disponible
     if (!tauriBridge.isTauri()) {
-      console.error('Cette application nécessite Tauri pour fonctionner');
+      console.log('Mode développement détecté - Tauri non disponible');
+      console.log('L\'application sera pleinement fonctionnelle uniquement après compilation avec Tauri');
       return;
     }
     
@@ -30,6 +31,11 @@ class TauriStorageAdapter {
   }
 
   async enableFileSystemStorage(): Promise<boolean> {
+    if (!tauriBridge.isTauri()) {
+      console.warn('Fonctionnalité disponible uniquement après compilation avec Tauri');
+      return false;
+    }
+    
     try {
       const selectedPath = await tauriBridge.selectDirectory();
       if (selectedPath) {

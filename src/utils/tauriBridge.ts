@@ -1,7 +1,7 @@
-// Bridge Tauri - Version compatible pour développement
-// Note: Les imports Tauri réels seront ajoutés lors du build avec Tauri
+// Bridge Tauri - Version compatible pour développement et production
+// Pas d'imports directs de Tauri pour éviter les erreurs en mode développement
 
-// Déclaration globale pour Tauri
+// Déclaration globale pour Tauri (disponible uniquement en production)
 declare global {
   interface Window {
     __TAURI__?: {
@@ -20,12 +20,17 @@ export interface TauriAPI {
   versions: any;
 }
 
-// Fonction invoke locale pour éviter les erreurs d'import
+// Fonction invoke sécurisée pour éviter les erreurs d'import
 const invoke = async (cmd: string, args?: any): Promise<any> => {
-  if (window.__TAURI__?.invoke) {
-    return await window.__TAURI__.invoke(cmd, args);
+  if (typeof window !== 'undefined' && window.__TAURI__?.invoke) {
+    try {
+      return await window.__TAURI__.invoke(cmd, args);
+    } catch (error) {
+      console.error(`Erreur Tauri invoke ${cmd}:`, error);
+      throw error;
+    }
   }
-  throw new Error('Tauri not available');
+  throw new Error('Tauri non disponible - Application en mode développement');
 };
 
 class TauriBridge {
@@ -36,7 +41,9 @@ class TauriBridge {
    * Vérifie si l'application s'exécute dans Tauri
    */
   isTauri(): boolean {
-    return typeof window !== 'undefined' && window.__TAURI__ !== undefined;
+    return typeof window !== 'undefined' && 
+           window.__TAURI__ !== undefined && 
+           typeof window.__TAURI__.invoke === 'function';
   }
 
   /**
@@ -65,7 +72,8 @@ class TauriBridge {
    */
   async selectDirectory(): Promise<string | null> {
     if (!this.isTauri()) {
-      throw new Error('Tauri requis pour la sélection de dossier');
+      console.warn('Tauri non disponible - Mode développement détecté');
+      return null;
     }
 
     try {
