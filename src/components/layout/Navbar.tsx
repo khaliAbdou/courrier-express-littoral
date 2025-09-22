@@ -1,13 +1,27 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Mail, Send, BarChart, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { configManager } from '@/utils/configManager';
 
 const Navbar = () => {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [config, setConfig] = useState<any>(null);
+
+  useEffect(() => {
+    loadConfig();
+  }, []);
+
+  const loadConfig = async () => {
+    try {
+      const appConfig = await configManager.loadConfig();
+      setConfig(appConfig);
+    } catch (error) {
+      console.error('Erreur chargement config:', error);
+    }
+  };
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -24,13 +38,13 @@ const Navbar = () => {
           <div className="flex-shrink-0">
             <Link to="/" className="flex items-center">
               <img 
-                src="/lovable-uploads/b5287aa5-72f8-436b-95be-6d1a0e22b700.png" 
+                src={config?.customLogo || "/lovable-uploads/b5287aa5-72f8-436b-95be-6d1a0e22b700.png"} 
                 alt="ANOR Logo" 
                 className="h-10 w-10 mr-2"
               />
               <div className="flex flex-col">
                 <span className="font-bold text-xl">Suivi du Courrier</span>
-                <span className="ml-1 text-xs">Antenne du Littoral</span>
+                <span className="ml-1 text-xs">{config?.serviceName || 'Antenne du Littoral'}</span>
               </div>
             </Link>
           </div>

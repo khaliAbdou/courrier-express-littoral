@@ -1,73 +1,80 @@
 import { IncomingMail, OutgoingMail } from '@/types/mail';
 import { MailStorageData } from '@/types/fileSystemAccess';
 import { fileSystemStorage } from './fileSystemStorage';
+import { diskStorage } from './diskStorage';
+import { licenseManager } from './licenseManager';
 
 class StorageAdapter {
-  private static instance: StorageAdapter | null = null;
-  private initialized: boolean = false;
-  private storageReady: boolean = false;
+  private isFileSystemEnabled = false;
+  private backupInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    // Le système utilisera uniquement le stockage sur disque
+    this.init();
   }
 
-  static getInstance(): StorageAdapter {
-    if (!StorageAdapter.instance) {
-      StorageAdapter.instance = new StorageAdapter();
+  private async init() {
+    // Vérification de la licence avant initialisation
+    try {
+      const licenseCheck = await licenseManager.checkLicenseStatus();
+      if (!licenseCheck.isValid) {
+        console.warn('Licence expirée. Fonctionnement limité.');
+      }
+    } catch (error) {
+      console.warn('Vérification licence ignorée en développement:', error);
     }
-    return StorageAdapter.instance;
+
+    // Stockage filesystem par défaut pour applications desktop
+    if (fileSystemStorage.isUsable()) {
+      await this.enableFileSystemStorage();
+    } else {
+      console.warn('Stockage filesystem non disponible');
+    }
   }
 
-  // Initialise le stockage sur système de fichiers
-  async initializeFileSystemStorage(): Promise<boolean> {
-    if (this.initialized) return this.storageReady;
-    
-    this.initialized = true;
-    
-    // Vérifier si l'API File System Access est supportée et utilisable
-    if (!fileSystemStorage.isSupported() || !fileSystemStorage.isUsable()) {
-      console.warn('File System Access API non supporté ou non utilisable, utilisation du localStorage');
-      this.storageReady = false;
+  async enableFileSystemStorage(): Promise<boolean> {
+    try {
+      // Vérifier la licence avant activation
+      try {
+        const licenseCheck = await licenseManager.checkLicenseStatus();
+        if (!licenseCheck.isValid) {
+          console.warn('Licence requise pour utiliser cette application.');
+        }
+      } catch (error) {
+        console.warn('Vérification licence ignorée en développement:', error);
+      }
+
+      const success = await fileSystemStorage.requestAccess();
+      if (success) {
+        this.isFileSystemEnabled = true;
+        this.startAutoBackup();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Erreur activation stockage filesystem:', error);
       return false;
     }
-
-    // Vérifier si un dossier est déjà configuré
-    if (fileSystemStorage.hasStorageDirectory()) {
-      this.storageReady = true;
-      return true;
-    }
-
-    // Sinon, demander à l'utilisateur de sélectionner un dossier
-    const success = await fileSystemStorage.selectStorageDirectory();
-    this.storageReady = success;
-    return success;
   }
 
-  // Active le stockage sur système de fichiers
-  async enableFileSystemStorage(): Promise<boolean> {
-    const success = await fileSystemStorage.selectStorageDirectory();
-    this.storageReady = success;
-    return success;
+  private startAutoBackup() {
+    // Sauvegarde automatique toutes les 5 minutes
+    if (this.backupInterval) {
+      clearInterval(this.backupInterval);
+    }
+    
+    this.backupInterval = setInterval(async () => {
+      try {
+        await this.exportData();
+      } catch (error) {
+        console.error('Erreur sauvegarde automatique:', error);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
   }
 
   // Sauvegarde un courrier entrant
   async saveIncomingMail(mail: any): Promise<void> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_incomingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        mails.push(mail);
-        localStorage.setItem('mailApp_incomingMails', JSON.stringify(mails));
-        return;
-      } catch (error) {
-        console.error('Erreur lors de la sauvegarde dans localStorage:', error);
-        throw error;
-      }
+    if (!this.isFileSystemEnabled) {
+      throw new Error('Stockage filesystem requis');
     }
 
     try {
@@ -89,22 +96,8 @@ class StorageAdapter {
 
   // Sauvegarde un courrier sortant
   async saveOutgoingMail(mail: any): Promise<void> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_outgoingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        mails.push(mail);
-        localStorage.setItem('mailApp_outgoingMails', JSON.stringify(mails));
-        return;
-      } catch (error) {
-        console.error('Erreur lors de la sauvegarde dans localStorage:', error);
-        throw error;
-      }
+    if (!this.isFileSystemEnabled) {
+      throw new Error('Stockage filesystem requis');
     }
 
     try {
@@ -126,26 +119,8 @@ class StorageAdapter {
 
   // Met à jour un courrier entrant
   async updateIncomingMail(mailId: string, updatedMail: any): Promise<boolean> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_incomingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        const index = mails.findIndex((mail: any) => mail.id === mailId);
-        if (index !== -1) {
-          mails[index] = { ...mails[index], ...updatedMail };
-          localStorage.setItem('mailApp_incomingMails', JSON.stringify(mails));
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.error('Erreur lors de la mise à jour dans localStorage:', error);
-        return false;
-      }
+    if (!this.isFileSystemEnabled) {
+      throw new Error('Stockage filesystem requis');
     }
 
     try {
@@ -168,26 +143,8 @@ class StorageAdapter {
 
   // Met à jour un courrier sortant
   async updateOutgoingMail(mailId: string, updatedMail: any): Promise<boolean> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_outgoingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        const index = mails.findIndex((mail: any) => mail.id === mailId);
-        if (index !== -1) {
-          mails[index] = { ...mails[index], ...updatedMail };
-          localStorage.setItem('mailApp_outgoingMails', JSON.stringify(mails));
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.error('Erreur lors de la mise à jour dans localStorage:', error);
-        return false;
-      }
+    if (!this.isFileSystemEnabled) {
+      throw new Error('Stockage filesystem requis');
     }
 
     try {
@@ -210,25 +167,8 @@ class StorageAdapter {
 
   // Récupère tous les courriers entrants
   async getAllIncomingMails(): Promise<IncomingMail[]> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_incomingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        return mails.map((mail: any) => ({
-          ...mail,
-          date: mail.date ? new Date(mail.date) : undefined,
-          issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
-          responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-        }));
-      } catch (error) {
-        console.error('Erreur lors de la récupération depuis localStorage:', error);
-        return [];
-      }
+    if (!this.isFileSystemEnabled) {
+      return [];
     }
 
     try {
@@ -249,24 +189,8 @@ class StorageAdapter {
 
   // Récupère tous les courriers sortants
   async getAllOutgoingMails(): Promise<OutgoingMail[]> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_outgoingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        return mails.map((mail: any) => ({
-          ...mail,
-          date: mail.date ? new Date(mail.date) : undefined,
-          issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
-        }));
-      } catch (error) {
-        console.error('Erreur lors de la récupération depuis localStorage:', error);
-        return [];
-      }
+    if (!this.isFileSystemEnabled) {
+      return [];
     }
 
     try {
@@ -286,22 +210,8 @@ class StorageAdapter {
 
   // Supprime un courrier entrant
   async deleteIncomingMail(mailId: string): Promise<boolean> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_incomingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        const filteredMails = mails.filter((mail: any) => mail.id !== mailId);
-        localStorage.setItem('mailApp_incomingMails', JSON.stringify(filteredMails));
-        return true;
-      } catch (error) {
-        console.error('Erreur lors de la suppression dans localStorage:', error);
-        return false;
-      }
+    if (!this.isFileSystemEnabled) {
+      throw new Error('Stockage filesystem requis');
     }
 
     try {
@@ -321,22 +231,8 @@ class StorageAdapter {
 
   // Supprime un courrier sortant
   async deleteOutgoingMail(mailId: string): Promise<boolean> {
-    if (!this.storageReady) {
-      await this.initializeFileSystemStorage();
-    }
-    
-    if (!this.storageReady) {
-      // Mode fallback avec localStorage
-      try {
-        const stored = localStorage.getItem('mailApp_outgoingMails');
-        const mails = stored ? JSON.parse(stored) : [];
-        const filteredMails = mails.filter((mail: any) => mail.id !== mailId);
-        localStorage.setItem('mailApp_outgoingMails', JSON.stringify(filteredMails));
-        return true;
-      } catch (error) {
-        console.error('Erreur lors de la suppression dans localStorage:', error);
-        return false;
-      }
+    if (!this.isFileSystemEnabled) {
+      throw new Error('Stockage filesystem requis');
     }
 
     try {
@@ -359,7 +255,7 @@ class StorageAdapter {
     try {
       let data: MailStorageData;
       
-      if (this.storageReady) {
+      if (this.isFileSystemEnabled) {
         // Utiliser le stockage sur disque
         const diskData = await fileSystemStorage.loadData();
         data = diskData || {
@@ -369,20 +265,17 @@ class StorageAdapter {
           lastModified: new Date().toISOString()
         };
       } else {
-        // Utiliser le localStorage en fallback
-        const incomingStored = localStorage.getItem('mailApp_incomingMails');
-        const outgoingStored = localStorage.getItem('mailApp_outgoingMails');
-        
+        // Aucune donnée disponible
         data = {
-          incomingMails: incomingStored ? JSON.parse(incomingStored) : [],
-          outgoingMails: outgoingStored ? JSON.parse(outgoingStored) : [],
+          incomingMails: [],
+          outgoingMails: [],
           version: '1.0.0',
           lastModified: new Date().toISOString()
         };
       }
 
-      // Export classique avec téléchargement direct si l'API File System n'est pas disponible
-      if (this.storageReady && fileSystemStorage.isSupported() && fileSystemStorage.isUsable()) {
+      // Export avec File System API si disponible
+      if (this.isFileSystemEnabled && fileSystemStorage.isSupported() && fileSystemStorage.isUsable()) {
         return await fileSystemStorage.exportData(data);
       } else {
         // Fallback : téléchargement direct
@@ -412,7 +305,7 @@ class StorageAdapter {
   async importData(): Promise<boolean> {
     try {
       // Utiliser l'API File System si disponible et utilisable
-      if (this.storageReady && fileSystemStorage.isSupported() && fileSystemStorage.isUsable()) {
+      if (this.isFileSystemEnabled && fileSystemStorage.isSupported() && fileSystemStorage.isUsable()) {
         const data = await fileSystemStorage.importData();
         if (!data) return false;
         await fileSystemStorage.saveData(data);
@@ -434,12 +327,9 @@ class StorageAdapter {
               const text = await file.text();
               const data = JSON.parse(text) as MailStorageData;
               
-              // Sauvegarder dans localStorage
-              if (data.incomingMails) {
-                localStorage.setItem('mailApp_incomingMails', JSON.stringify(data.incomingMails));
-              }
-              if (data.outgoingMails) {
-                localStorage.setItem('mailApp_outgoingMails', JSON.stringify(data.outgoingMails));
+              // Sauvegarder avec filesystem si disponible
+              if (this.isFileSystemEnabled) {
+                await fileSystemStorage.saveData(data);
               }
               
               resolve(true);
@@ -459,7 +349,7 @@ class StorageAdapter {
 
   // Vérifie si le système de fichiers est utilisé
   isUsingFileSystem(): boolean {
-    return this.storageReady;
+    return this.isFileSystemEnabled;
   }
 
   // Vérifie si le système de fichiers est supporté
@@ -474,8 +364,8 @@ class StorageAdapter {
 
   // Vérifie si le stockage est prêt
   isStorageReady(): boolean {
-    return this.storageReady;
+    return this.isFileSystemEnabled;
   }
 }
 
-export const storageAdapter = StorageAdapter.getInstance();
+export const storageAdapter = new StorageAdapter();

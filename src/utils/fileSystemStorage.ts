@@ -46,6 +46,11 @@ class FileSystemStorage {
     }
   }
 
+  // Alias pour la compatibilité
+  async requestAccess(): Promise<boolean> {
+    return await this.selectStorageDirectory();
+  }
+
   // Sauvegarde les données dans un fichier
   async saveData(data: MailStorageData): Promise<boolean> {
     if (!this.directoryHandle) {
@@ -81,6 +86,49 @@ class FileSystemStorage {
     } catch (error) {
       console.error('Erreur lors du chargement:', error);
       return null;
+    }
+  }
+
+  // Lit un fichier spécifique
+  async readFile(fileName: string): Promise<string | null> {
+    if (!this.isUsable()) return null;
+    
+    try {
+      if (!this.directoryHandle) {
+        await this.selectStorageDirectory();
+      }
+      
+      if (!this.directoryHandle) return null;
+      
+      const fileHandle = await this.directoryHandle.getFileHandle(fileName);
+      const file = await fileHandle.getFile();
+      return await file.text();
+    } catch (error) {
+      console.error('Erreur lecture fichier:', error);
+      return null;
+    }
+  }
+
+  // Écrit un fichier spécifique
+  async writeFile(fileName: string, content: string): Promise<boolean> {
+    if (!this.isUsable()) return false;
+    
+    try {
+      if (!this.directoryHandle) {
+        await this.selectStorageDirectory();
+      }
+      
+      if (!this.directoryHandle) return false;
+      
+      const fileHandle = await this.directoryHandle.getFileHandle(fileName, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      
+      return true;
+    } catch (error) {
+      console.error('Erreur écriture fichier:', error);
+      return false;
     }
   }
 

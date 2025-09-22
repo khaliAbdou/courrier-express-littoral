@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import IncomingMail from "./pages/IncomingMail";
 import OutgoingMail from "./pages/OutgoingMail";
 import Statistics from "./pages/Statistics";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,10 +19,11 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/incoming" element={<IncomingMail />} />
-          <Route path="/outgoing" element={<OutgoingMail />} />
-          <Route path="/statistics" element={<Statistics />} />
-          <Route path="*" element={<NotFound />} />
+            <Route path="/incoming" element={<IncomingMail />} />
+            <Route path="/outgoing" element={<OutgoingMail />} />
+            <Route path="/statistics" element={<Statistics />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
