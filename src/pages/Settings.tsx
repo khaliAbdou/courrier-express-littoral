@@ -5,6 +5,7 @@ import { Settings as SettingsIcon, User, Shield, HardDrive } from 'lucide-react'
 import AppConfiguration from '@/components/config/AppConfiguration';
 import LicenseManagerComponent from '@/components/license/LicenseManager';
 import FileSystemManager from '@/components/storage/FileSystemManager';
+import SystemDiagnostic from '@/components/diagnostic/SystemDiagnostic';
 
 const Settings: React.FC = () => {
   return (
@@ -20,7 +21,7 @@ const Settings: React.FC = () => {
       </div>
 
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="general" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             Configuration
@@ -32,6 +33,10 @@ const Settings: React.FC = () => {
           <TabsTrigger value="storage" className="flex items-center gap-2">
             <HardDrive className="h-4 w-4" />
             Stockage
+          </TabsTrigger>
+          <TabsTrigger value="diagnostic" className="flex items-center gap-2">
+            <SettingsIcon className="h-4 w-4" />
+            Diagnostic
           </TabsTrigger>
         </TabsList>
 
@@ -73,6 +78,20 @@ const Settings: React.FC = () => {
             </CardHeader>
             <CardContent>
               <FileSystemManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="diagnostic" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5" />
+                Diagnostic Système
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SystemDiagnostic />
             </CardContent>
           </Card>
         </TabsContent>

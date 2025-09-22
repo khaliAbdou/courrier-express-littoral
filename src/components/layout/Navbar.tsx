@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Mail, Send, BarChart, X } from "lucide-react";
+import { Mail, Send, BarChart, Settings, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { configManager } from '@/utils/configManager';
 
@@ -90,6 +90,16 @@ const Navbar = () => {
                 <BarChart className="w-4 h-4 mr-1" />
                 Statistiques
               </Link>
+              
+              <Link 
+                to="/settings" 
+                className={`px-3 py-2 rounded-md text-sm font-medium flex items-center transition-colors ${
+                  isActive("/settings") ? "bg-white text-agency-blue" : "hover:bg-agency-lightblue"
+                }`}
+              >
+                <Settings className="w-4 h-4 mr-1" />
+                Paramètres
+              </Link>
             </div>
           </div>
           
@@ -154,6 +164,16 @@ const Navbar = () => {
             >
               <BarChart className="w-4 h-4 mr-2" />
               Statistiques
+            </Link>
+            <Link 
+              to="/settings" 
+              className={`block px-3 py-2 rounded-md text-base font-medium flex items-center ${
+                isActive("/settings") ? "bg-white text-agency-blue" : "hover:bg-agency-lightblue"
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Paramètres
             </Link>
           </div>
         </div>
