@@ -17,26 +17,17 @@ const FileSystemManager: React.FC = () => {
     setIsSupported(storageAdapter.isFileSystemSupported());
     setIsUsingFileSystem(storageAdapter.isUsingFileSystem());
     setStorageLocation(storageAdapter.getStorageLocation());
-    
-    // Si l'API n'est pas utilisable mais supportée, on indique le mode localStorage
-    if (storageAdapter.isFileSystemSupported() && !storageAdapter.isUsingFileSystem()) {
-      setStorageLocation('Stockage temporaire (localStorage)');
-    }
   }, []);
 
   const handleSelectDirectory = async () => {
     setIsLoading(true);
     try {
-      const success = await storageAdapter.enableFileSystemStorage();
-      if (success) {
-        setIsUsingFileSystem(true);
-        setStorageLocation(storageAdapter.getStorageLocation());
-        toast.success('Dossier de stockage configuré avec succès !');
-      } else {
-        toast.error('Impossible de configurer le dossier de stockage');
-      }
-    } catch (error) {
-      toast.error('Erreur lors de la configuration du stockage');
+      await storageAdapter.enableFileSystemStorage();
+      setIsUsingFileSystem(true);
+      setStorageLocation(storageAdapter.getStorageLocation());
+      toast.success('Dossier de stockage configuré avec succès !');
+    } catch (error: any) {
+      toast.error(error.message || 'Erreur lors de la configuration du stockage');
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -89,24 +80,13 @@ const FileSystemManager: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {!isSupported ? (
-              <>
-                Votre navigateur ne supporte pas l'API File System Access. 
-                Cette fonctionnalité nécessite Chrome 86+ ou Edge 86+.
-                Les données sont stockées localement dans le navigateur.
-              </>
-            ) : (
-              <>
-                L'API File System Access n'est pas disponible dans cet environnement 
-                (iframe cross-origin). Les données sont stockées temporairement dans le navigateur.
-                Pour un stockage complet sur disque, utilisez l'application en mode standalone.
-              </>
-            )}
-          </AlertDescription>
-        </Alert>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Cette application nécessite un navigateur compatible avec File System Access API (Chrome/Edge 86+).
+              L'API n'est pas supportée par votre navigateur actuel.
+            </AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );
@@ -117,7 +97,7 @@ const FileSystemManager: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <HardDrive className="h-5 w-5" />
-          Gestion du Stockage sur Disque
+          Configuration du Stockage sur Disque Dur
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -129,14 +109,24 @@ const FileSystemManager: React.FC = () => {
               Stockage sur disque activé
             </Badge>
           ) : (
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <Badge variant="destructive" className="flex items-center gap-1">
               <AlertCircle className="h-3 w-3" />
-              Stockage navigateur uniquement
+              Dossier de stockage requis
             </Badge>
           )}
         </div>
 
-        {storageLocation && (
+        {!isUsingFileSystem && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Configuration requise :</strong> Vous devez sélectionner un dossier de stockage 
+              pour utiliser cette application. Toutes les données seront sauvegardées sur votre disque dur.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {storageLocation && isUsingFileSystem && (
           <div className="p-3 bg-muted rounded-lg">
             <p className="text-sm font-medium">Dossier de stockage configuré :</p>
             <p className="text-sm text-muted-foreground font-mono">{storageLocation}</p>
@@ -149,7 +139,8 @@ const FileSystemManager: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Button
             onClick={handleSelectDirectory}
-            disabled={isLoading || !isSupported}
+            disabled={isLoading}
+            variant={isUsingFileSystem ? "outline" : "default"}
             className="flex items-center gap-2"
           >
             <FolderOpen className="h-4 w-4" />
@@ -159,7 +150,7 @@ const FileSystemManager: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleExport}
-            disabled={isLoading}
+            disabled={isLoading || !isUsingFileSystem}
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
@@ -169,7 +160,7 @@ const FileSystemManager: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleImport}
-            disabled={isLoading}
+            disabled={isLoading || !isUsingFileSystem}
             className="flex items-center gap-2"
           >
             <Upload className="h-4 w-4" />
@@ -180,8 +171,8 @@ const FileSystemManager: React.FC = () => {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Stockage 100% local :</strong> Cette application utilise exclusivement le stockage sur disque dur.
-            Aucune donnée n'est stockée dans le navigateur ou sur internet. Vous avez le contrôle total de vos fichiers
+            <strong>Application Desktop :</strong> Cette application utilise exclusivement le stockage sur disque dur.
+            Aucune donnée n'est stockée dans le navigateur. Vous avez le contrôle total de vos fichiers
             et pouvez les sauvegarder, partager ou migrer facilement.
           </AlertDescription>
         </Alert>
