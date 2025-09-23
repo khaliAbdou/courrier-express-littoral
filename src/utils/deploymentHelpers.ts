@@ -1,12 +1,12 @@
 // Utilitaires pour le déploiement et la distribution
 
-import { electronBridge } from './electronBridge';
+import { tauriBridge } from './tauriBridge';
 import { configManager } from './configManager';
 
 interface DeploymentInfo {
   platform: string;
-  isElectron: boolean;
-  storageMode: 'electron' | 'filesystem' | 'fallback';
+  isTauri: boolean;
+  storageMode: 'tauri' | 'fallback';
   appVersion: string;
 }
 
@@ -16,16 +16,16 @@ class DeploymentHelpers {
   async getDeploymentInfo(): Promise<DeploymentInfo> {
     try {
       return {
-        platform: electronBridge.getPlatform(),
-        isElectron: electronBridge.isElectron(),
-        storageMode: electronBridge.getOptimalStorageMode(),
+        platform: await tauriBridge.getPlatform(),
+        isTauri: tauriBridge.isTauri(),
+        storageMode: tauriBridge.getOptimalStorageMode(),
         appVersion: this.getAppVersion()
       };
     } catch (error) {
       console.error('Erreur récupération infos déploiement:', error);
       return {
         platform: 'unknown',
-        isElectron: false,
+        isTauri: false,
         storageMode: 'fallback',
         appVersion: '1.0.0'
       };
@@ -47,17 +47,10 @@ class DeploymentHelpers {
     const issues: string[] = [];
     const recommendations: string[] = [];
 
-    // Vérifier le navigateur si pas Electron
-    if (!electronBridge.isElectron()) {
-      if (!('showDirectoryPicker' in window)) {
-        issues.push('API File System Access non supportée');
-        recommendations.push('Utiliser Chrome 86+ ou Edge 86+');
-      }
-      
-      if (!window.isSecureContext) {
-        issues.push('Contexte non sécurisé (HTTPS requis)');
-        recommendations.push('Utiliser HTTPS ou localhost');
-      }
+    // Vérifier Tauri
+    if (!tauriBridge.isTauri()) {
+      issues.push('Environnement Tauri non détecté');
+      recommendations.push('Compiler avec Tauri pour accès complet au système de fichiers');
     }
 
     // Vérifier le stockage
@@ -69,11 +62,11 @@ class DeploymentHelpers {
       issues.push('Erreur accès stockage');
     }
 
-    // Vérifier les permissions
-    if (electronBridge.isElectron()) {
-      const versions = electronBridge.getVersions();
-      if (!versions.electron) {
-        issues.push('Version Electron non détectée');
+    // Vérifier les permissions Tauri
+    if (tauriBridge.isTauri()) {
+      const versions = await tauriBridge.getVersions();
+      if (!versions.tauri) {
+        issues.push('Version Tauri non détectée');
       }
     }
 
@@ -94,7 +87,7 @@ class DeploymentHelpers {
     // Informations générales
     report += `Version: ${deploymentInfo.appVersion}\n`;
     report += `Plateforme: ${deploymentInfo.platform}\n`;
-    report += `Environnement: ${deploymentInfo.isElectron ? 'Electron' : 'Navigateur'}\n`;
+    report += `Environnement: ${deploymentInfo.isTauri ? 'Tauri' : 'Navigateur'}\n`;
     report += `Mode stockage: ${deploymentInfo.storageMode}\n`;
     report += `Date: ${new Date().toISOString()}\n\n`;
     
@@ -117,12 +110,12 @@ class DeploymentHelpers {
     }
     
     // Informations techniques
-    if (electronBridge.isElectron()) {
-      const versions = electronBridge.getVersions();
-      report += '\n=== VERSIONS ELECTRON ===\n';
-      report += `Node.js: ${versions.node}\n`;
-      report += `Chrome: ${versions.chrome}\n`;
-      report += `Electron: ${versions.electron}\n`;
+    if (tauriBridge.isTauri()) {
+      const versions = await tauriBridge.getVersions();
+      report += '\n=== VERSIONS TAURI ===\n';
+      report += `Tauri: ${versions.tauri}\n`;
+      report += `Webview: ${versions.webview}\n`;
+      report += `Platform: ${versions.platform}\n`;
     }
     
     // Configuration utilisateur
@@ -147,9 +140,9 @@ class DeploymentHelpers {
       const report = await this.generateDiagnosticReport();
       const filename = `diagnostic-anor-${new Date().toISOString().split('T')[0]}.txt`;
       
-      if (electronBridge.isElectron()) {
-        // Utiliser l'API Electron pour sauvegarder
-        const success = await electronBridge.writeFile(filename, report);
+      if (tauriBridge.isTauri()) {
+        // Utiliser l'API Tauri pour sauvegarder
+        const success = await tauriBridge.writeFile(filename, report);
         if (success) {
           console.log('Rapport exporté avec succès');
         }
@@ -191,7 +184,7 @@ class DeploymentHelpers {
     }
     
     // Vérifier le stockage
-    if (electronBridge.getOptimalStorageMode() === 'fallback') {
+    if (tauriBridge.getOptimalStorageMode() === 'fallback') {
       checklist.push({ 
         item: 'Stockage', 
         status: 'warning', 

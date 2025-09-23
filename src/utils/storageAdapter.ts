@@ -1,4 +1,13 @@
 import { tauriStorageAdapter } from './storageAdapterTauri';
+import { localStorageAdapter } from './storageAdapterLocal';
+import { tauriBridge } from './tauriBridge';
 
-// Utiliser l'adaptateur Tauri
-export const storageAdapter = tauriStorageAdapter;
+// Détecte et utilise l'adaptateur approprié
+function getStorageAdapter() {
+  if (tauriBridge.isTauri()) {
+    return tauriStorageAdapter;
+  }
+  return localStorageAdapter;
+}
+
+export const storageAdapter = getStorageAdapter();

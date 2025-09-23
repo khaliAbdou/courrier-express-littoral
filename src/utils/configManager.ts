@@ -1,4 +1,4 @@
-import { fileSystemStorage } from './fileSystemStorage';
+import { storageAdapter } from './storageAdapter';
 
 export interface AppConfig {
   serviceName: string;
@@ -29,8 +29,12 @@ class ConfigManager {
 
   async loadConfig(): Promise<AppConfig> {
     try {
-      if (fileSystemStorage.isUsable()) {
-        const configData = await fileSystemStorage.readFile(this.configFile);
+      if (storageAdapter.isUsable()) {
+        // Pour Tauri, lire directement le fichier de config
+        const filePath = `${storageAdapter.getStorageLocation()}/app-config.json`;
+        const configData = await import('./tauriBridge').then(({ tauriBridge }) => 
+          tauriBridge.readFile(filePath)
+        );
         if (configData) {
           const parsed = JSON.parse(configData);
           return { ...defaultConfig, ...parsed };
@@ -48,8 +52,12 @@ class ConfigManager {
 
   async saveConfig(config: AppConfig): Promise<void> {
     try {
-      if (fileSystemStorage.isUsable()) {
-        await fileSystemStorage.writeFile(this.configFile, JSON.stringify(config, null, 2));
+      if (storageAdapter.isUsable()) {
+        // Pour Tauri, écrire directement le fichier de config
+        const filePath = `${storageAdapter.getStorageLocation()}/app-config.json`;
+        await import('./tauriBridge').then(({ tauriBridge }) => 
+          tauriBridge.writeFile(filePath, JSON.stringify(config, null, 2))
+        );
       }
     } catch (error) {
       console.error('Erreur sauvegarde configuration:', error);
