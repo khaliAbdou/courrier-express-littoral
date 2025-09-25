@@ -10,13 +10,18 @@ class FileSystemStorage {
     return 'showDirectoryPicker' in window && 'showSaveFilePicker' in window && 'showOpenFilePicker' in window;
   }
 
-  // Vérifie si File System Access API est utilisable pour Electron
+  // Vérifie si File System Access API est utilisable
   isUsable(): boolean {
     if (!this.isSupported()) return false;
     
     try {
-      // Pour Electron, vérifier juste le contexte sécurisé
-      // et la présence des APIs nécessaires
+      // Vérifier si on est dans un iframe (ex: Lovable preview)
+      if (window.top !== window.self) {
+        console.log('Application dans iframe - API File System bloquée par sécurité');
+        return false;
+      }
+      
+      // Vérifier le contexte sécurisé et la présence des APIs
       return window.isSecureContext && 
              'showDirectoryPicker' in window &&
              'showSaveFilePicker' in window &&
