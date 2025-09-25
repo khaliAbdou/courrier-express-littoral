@@ -120,12 +120,23 @@ const FileSystemManager: React.FC = () => {
           )}
         </div>
 
-        {!isUsingFileSystem && (
+        {!isSupported && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Configuration requise :</strong> Vous devez sélectionner un dossier de stockage 
-              pour utiliser cette application. Toutes les données seront sauvegardées sur votre disque dur.
+              <strong>Mode navigateur détecté :</strong> L'application fonctionne en mode de développement 
+              avec stockage temporaire. Les données sont sauvées localement mais pourraient être perdues.
+              Pour un stockage permanent, utilisez la version exécutable (.exe).
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {isSupported && !isUsingFileSystem && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Configuration optionnelle :</strong> Vous pouvez sélectionner un dossier de stockage 
+              pour sauvegarder vos données directement sur le disque dur, ou continuer avec le stockage local temporaire.
             </AlertDescription>
           </Alert>
         )}
@@ -172,12 +183,20 @@ const FileSystemManager: React.FC = () => {
           </Button>
         </div>
 
-        <Alert>
+          <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Application Desktop :</strong> Cette application utilise exclusivement le stockage sur disque dur.
-            Aucune donnée n'est stockée dans le navigateur. Vous avez le contrôle total de vos fichiers
-            et pouvez les sauvegarder, partager ou migrer facilement.
+            {isSupported ? (
+              <>
+                <strong>Application Desktop :</strong> En mode développement, l'application utilise un stockage local temporaire. 
+                Dans la version exécutable (.exe), toutes les données sont stockées directement sur votre disque dur.
+              </>
+            ) : (
+              <>
+                <strong>Mode Développement :</strong> Les données sont stockées temporairement dans le navigateur.
+                Pour un stockage permanent, utilisez la version exécutable de l'application.
+              </>
+            )}
           </AlertDescription>
         </Alert>
       </CardContent>
