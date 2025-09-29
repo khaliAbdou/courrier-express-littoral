@@ -125,7 +125,10 @@ class StorageAdapter {
         };
       }
       
-      data.incomingMails.push(mail);
+      // Convertir les fichiers en données base64 pour la persistance
+      const processedMail = await this.processScannedDocuments(mail);
+      
+      data.incomingMails.push(processedMail);
       data.lastModified = new Date().toISOString();
 
       if (this.isFileSystemEnabled) {
@@ -163,7 +166,10 @@ class StorageAdapter {
         };
       }
       
-      data.outgoingMails.push(mail);
+      // Convertir les fichiers en données base64 pour la persistance
+      const processedMail = await this.processScannedDocuments(mail);
+      
+      data.outgoingMails.push(processedMail);
       data.lastModified = new Date().toISOString();
 
       if (this.isFileSystemEnabled) {
@@ -240,12 +246,15 @@ class StorageAdapter {
 
       const mails = data?.incomingMails || [];
       
-      return mails.map((mail: any) => ({
+      const processedMails = await Promise.all(mails.map(async (mail: any) => ({
         ...mail,
         date: mail.date ? new Date(mail.date) : undefined,
         issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
         responseDate: mail.responseDate ? new Date(mail.responseDate) : undefined,
-      }));
+        scannedDocuments: await this.restoreScannedDocuments(mail.scannedDocuments || []),
+      })));
+
+      return processedMails;
     } catch (error) {
       console.error('Erreur lors de la récupération des courriers entrants:', error);
       return [];
@@ -267,11 +276,14 @@ class StorageAdapter {
 
       const mails = data?.outgoingMails || [];
       
-      return mails.map((mail: any) => ({
+      const processedMails = await Promise.all(mails.map(async (mail: any) => ({
         ...mail,
         date: mail.date ? new Date(mail.date) : undefined,
         issueDate: mail.issueDate ? new Date(mail.issueDate) : undefined,
-      }));
+        scannedDocuments: await this.restoreScannedDocuments(mail.scannedDocuments || []),
+      })));
+
+      return processedMails;
     } catch (error) {
       console.error('Erreur lors de la récupération des courriers sortants:', error);
       return [];
@@ -439,6 +451,71 @@ class StorageAdapter {
   isStorageReady(): boolean {
     // Le stockage est prêt soit en mode filesystem, soit en mode fallback
     return this.isFileSystemEnabled || !fileSystemStorage.isUsable();
+  }
+
+  // Convertit les fichiers en base64 pour la persistance
+  private async processScannedDocuments(mail: any): Promise<any> {
+    if (!mail.scannedDocuments || mail.scannedDocuments.length === 0) {
+      return mail;
+    }
+
+    const processedDocuments = await Promise.all(
+      mail.scannedDocuments.map(async (doc: any) => {
+        if (doc.file && typeof doc.file === 'object') {
+          // Convertir le fichier en base64
+          const base64Data = await this.fileToBase64(doc.file);
+          return {
+            ...doc,
+            file: undefined, // Supprimer l'objet File
+            fileData: base64Data,
+            fileName: doc.file.name,
+            fileType: doc.file.type,
+            fileSize: doc.file.size
+          };
+        }
+        return doc;
+      })
+    );
+
+    return {
+      ...mail,
+      scannedDocuments: processedDocuments
+    };
+  }
+
+  // Convertit un fichier en base64
+  private async fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Restaure les fichiers depuis base64
+  private async restoreScannedDocuments(documents: any[]): Promise<any[]> {
+    return documents.map((doc: any) => {
+      if (doc.fileData && !doc.file) {
+        // Créer un objet File depuis les données base64
+        const byteCharacters = atob(doc.fileData.split(',')[1]);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const file = new File([byteArray], doc.fileName || doc.name, { 
+          type: doc.fileType || 'application/octet-stream' 
+        });
+
+        return {
+          ...doc,
+          file: file,
+          size: doc.fileSize || file.size
+        };
+      }
+      return doc;
+    });
   }
 }
 

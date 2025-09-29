@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import EditIncomingMailDialog from "./incoming/EditIncomingMailDialog";
 import EditOutgoingMailDialog from "./outgoing/EditOutgoingMailDialog";
+import ScannedDocumentViewer from "./ScannedDocumentViewer";
 import { deleteIncomingMail } from "@/utils/incomingMailStorage";
 import { deleteOutgoingMail } from "@/utils/outgoingMailStorage";
 import { toast } from "sonner";
@@ -117,12 +118,12 @@ const MailTable: React.FC<MailTableProps> = ({ mails, type, onMailUpdated }) => 
               mails.map((mail) => {
                 const isOverdue = mail.status === "Overdue";
                 return (
-                  <TableRow 
-                    key={mail.id} 
-                    className={`${
-                      isOverdue ? "bg-red-50" : "hover:bg-gray-50"
-                    }`}
-                  >
+                  <React.Fragment key={mail.id}>
+                    <TableRow 
+                      className={`${
+                        isOverdue ? "bg-red-50" : "hover:bg-gray-50"
+                      }`}
+                    >
                     <TableCell className="px-4 py-2 border-b">{mail.chronoNumber}</TableCell>
                     <TableCell className="px-4 py-2 border-b">
                       {format(new Date(mail.date), "dd/MM/yyyy")}
@@ -212,6 +213,15 @@ const MailTable: React.FC<MailTableProps> = ({ mails, type, onMailUpdated }) => 
                       </div>
                     </TableCell>
                   </TableRow>
+                  {/* Affichage des documents scannés */}
+                  {mail.scannedDocuments && mail.scannedDocuments.length > 0 && (
+                    <TableRow>
+                      <TableCell colSpan={type === "incoming" ? 9 : 8} className="px-4 py-2 bg-muted/30">
+                        <ScannedDocumentViewer documents={mail.scannedDocuments} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  </React.Fragment>
                 );
               })
             )}
