@@ -101,7 +101,7 @@ const FileSystemManager: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <HardDrive className="h-5 w-5" />
-          Configuration du Stockage sur Disque Dur
+          Informations de Stockage
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -113,59 +113,39 @@ const FileSystemManager: React.FC = () => {
               Stockage sur disque activé
             </Badge>
           ) : (
-            <Badge variant="destructive" className="flex items-center gap-1">
-              <AlertCircle className="h-3 w-3" />
-              Dossier de stockage requis
+            <Badge variant="outline" className="flex items-center gap-1">
+              <HardDrive className="h-3 w-3" />
+              Stockage local temporaire
             </Badge>
           )}
         </div>
 
         {!isSupported && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Mode navigateur détecté :</strong> L'application fonctionne en mode de développement 
-              avec stockage temporaire. Les données sont sauvées localement mais pourraient être perdues.
-              Pour un stockage permanent, utilisez la version exécutable (.exe).
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {isSupported && !isUsingFileSystem && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Configuration optionnelle :</strong> Vous pouvez sélectionner un dossier de stockage 
-              pour sauvegarder vos données directement sur le disque dur, ou continuer avec le stockage local temporaire.
+              <strong>Mode développement :</strong> L'application utilise un stockage local temporaire. 
+              Les données sont sauvées dans le navigateur mais pourraient être perdues lors du vidage du cache.
+              Dans la version exécutable, les données sont automatiquement stockées sur le disque dur.
             </AlertDescription>
           </Alert>
         )}
 
         {storageLocation && isUsingFileSystem && (
           <div className="p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium">Dossier de stockage configuré :</p>
+            <p className="text-sm font-medium">Dossier de stockage :</p>
             <p className="text-sm text-muted-foreground font-mono">{storageLocation}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Toutes les données sont stockées directement sur votre disque dur
+              Les données sont automatiquement stockées sur votre disque dur
             </p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Button
-            onClick={handleSelectDirectory}
-            disabled={isLoading}
-            variant={isUsingFileSystem ? "outline" : "default"}
-            className="flex items-center gap-2"
-          >
-            <FolderOpen className="h-4 w-4" />
-            {isUsingFileSystem ? 'Changer le dossier' : 'Choisir un dossier'}
-          </Button>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Button
             variant="outline"
             onClick={handleExport}
-            disabled={isLoading || !isUsingFileSystem}
+            disabled={isLoading}
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
@@ -175,7 +155,7 @@ const FileSystemManager: React.FC = () => {
           <Button
             variant="outline"
             onClick={handleImport}
-            disabled={isLoading || !isUsingFileSystem}
+            disabled={isLoading}
             className="flex items-center gap-2"
           >
             <Upload className="h-4 w-4" />
@@ -183,18 +163,18 @@ const FileSystemManager: React.FC = () => {
           </Button>
         </div>
 
-          <Alert>
+        <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            {isSupported ? (
+            {isUsingFileSystem ? (
               <>
-                <strong>Application Desktop :</strong> En mode développement, l'application utilise un stockage local temporaire. 
-                Dans la version exécutable (.exe), toutes les données sont stockées directement sur votre disque dur.
+                <strong>Stockage automatique :</strong> Les données sont automatiquement stockées sur votre disque dur. 
+                Aucune configuration supplémentaire n'est requise.
               </>
             ) : (
               <>
-                <strong>Mode Développement :</strong> Les données sont stockées temporairement dans le navigateur.
-                Pour un stockage permanent, utilisez la version exécutable de l'application.
+                <strong>Mode développement :</strong> Les données sont stockées temporairement dans le navigateur.
+                Dans la version installée de l'application, le stockage sur disque est automatique.
               </>
             )}
           </AlertDescription>

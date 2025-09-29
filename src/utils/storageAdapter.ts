@@ -14,10 +14,42 @@ class StorageAdapter {
     // Vérifier la disponibilité de l'API File System Access
     if (fileSystemStorage.isSupported() && fileSystemStorage.isUsable()) {
       console.log('Application prête - Stockage filesystem disponible');
+      // Activer automatiquement le stockage filesystem
+      await this.enableAutoFileSystemStorage();
     } else {
       console.log('Mode fallback - Utilisation de localStorage + téléchargement');
       // En mode fallback, charger les données existantes depuis localStorage
       this.loadFromLocalStorageFallback();
+    }
+  }
+
+  // Active automatiquement le stockage filesystem avec un dossier prédéfini
+  private async enableAutoFileSystemStorage() {
+    try {
+      // Vérifier s'il y a déjà un dossier configuré
+      const existingLocation = fileSystemStorage.getStorageDirectoryName();
+      if (existingLocation) {
+        this.isFileSystemEnabled = true;
+        this.startAutoBackup();
+        console.log('Dossier de stockage déjà configuré:', existingLocation);
+        return;
+      }
+
+      // Pour la version desktop, utiliser un dossier par défaut
+      // Pour le développement, utiliser localStorage uniquement
+      if (window.navigator.userAgent.includes('Electron')) {
+        // Mode Electron - demander l'accès au filesystem
+        const success = await fileSystemStorage.requestAccess();
+        if (success) {
+          this.isFileSystemEnabled = true;
+          this.startAutoBackup();
+          await this.migrateFromLocalStorage();
+          console.log('Stockage filesystem activé automatiquement');
+        }
+      }
+    } catch (error) {
+      console.warn('Impossible d\'activer le stockage filesystem automatiquement:', error);
+      // Continuer en mode localStorage
     }
   }
 
@@ -35,30 +67,9 @@ class StorageAdapter {
   }
 
   async enableFileSystemStorage(): Promise<boolean> {
-    // Vérifier si l'API est utilisable
-    if (!fileSystemStorage.isSupported() || !fileSystemStorage.isUsable()) {
-      console.warn('File System Access API non disponible, utilisation du mode fallback');
-      // En mode fallback, considérer comme "activé" mais utiliser localStorage
-      this.isFileSystemEnabled = false;
-      return true;
-    }
-
-    try {
-      const success = await fileSystemStorage.requestAccess();
-      if (success) {
-        this.isFileSystemEnabled = true;
-        this.startAutoBackup();
-        // Migrer les données localStorage vers le filesystem si nécessaire
-        await this.migrateFromLocalStorage();
-        console.log('Stockage filesystem activé avec succès');
-        return true;
-      }
-      console.warn('Utilisateur a annulé la sélection du dossier');
-      return false;
-    } catch (error) {
-      console.error('Erreur activation stockage filesystem:', error);
-      return false;
-    }
+    // Cette méthode est maintenant legacy - le stockage est activé automatiquement
+    // Retourner true car le stockage est toujours disponible (filesystem ou localStorage)
+    return true;
   }
 
   // Migre les données de localStorage vers le filesystem
