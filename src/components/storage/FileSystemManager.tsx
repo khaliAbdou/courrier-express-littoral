@@ -83,15 +83,7 @@ const FileSystemManager: React.FC = () => {
             Stockage sur Disque
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Cette application nécessite un navigateur compatible avec File System Access API (Chrome/Edge 86+).
-              L'API n'est pas supportée par votre navigateur actuel.
-            </AlertDescription>
-          </Alert>
-        </CardContent>
+       
       </Card>
     );
   }
@@ -120,16 +112,7 @@ const FileSystemManager: React.FC = () => {
           )}
         </div>
 
-        {!isSupported && (
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Mode développement :</strong> L'application utilise un stockage local temporaire. 
-              Les données sont sauvées dans le navigateur mais pourraient être perdues lors du vidage du cache.
-              Dans la version exécutable, les données sont automatiquement stockées sur le disque dur.
-            </AlertDescription>
-          </Alert>
-        )}
+       
 
         {storageLocation && isUsingFileSystem && (
           <div className="p-3 bg-muted rounded-lg">
