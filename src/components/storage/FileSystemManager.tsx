@@ -119,7 +119,7 @@ const FileSystemManager: React.FC = () => {
             <p className="text-sm font-medium">Dossier de stockage :</p>
             <p className="text-sm text-muted-foreground font-mono">{storageLocation}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Les données sont automatiquement stockées sur votre disque dur
+           
             </p>
           </div>
         )}
@@ -146,22 +146,7 @@ const FileSystemManager: React.FC = () => {
           </Button>
         </div>
 
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {isUsingFileSystem ? (
-              <>
-                <strong>Stockage automatique :</strong> Les données sont automatiquement stockées sur votre disque dur. 
-                Aucune configuration supplémentaire n'est requise.
-              </>
-            ) : (
-              <>
-                <strong>Mode développement :</strong> Les données sont stockées temporairement dans le navigateur.
-                Dans la version installée de l'application, le stockage sur disque est automatique.
-              </>
-            )}
-          </AlertDescription>
-        </Alert>
+       
       </CardContent>
     </Card>
   );
